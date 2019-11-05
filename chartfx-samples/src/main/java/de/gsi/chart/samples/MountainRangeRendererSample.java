@@ -16,6 +16,7 @@ import de.gsi.chart.renderer.spi.MountainRangeRenderer;
 import de.gsi.dataset.DataSet;
 import de.gsi.dataset.DataSet3D;
 import de.gsi.dataset.spi.AbstractDataSet3D;
+import de.gsi.dataset.spi.Legacy3DGridDataSetWrapper;
 import javafx.application.Application;
 import javafx.scene.Scene;
 import javafx.scene.control.Label;
@@ -42,7 +43,7 @@ public class MountainRangeRendererSample extends Application {
 		final MountainRangeRenderer mountainRangeRenderer = new MountainRangeRenderer();
 		chart.getRenderers().set(0, mountainRangeRenderer);
 		// mountainRangeRenderer.getDatasets().add(readImage());
-		chart.getDatasets().setAll(createTestData(0.0));
+		chart.getDatasets().setAll(new Legacy3DGridDataSetWrapper(createTestData(0.0)));
 //		DataSet3D additionalData = createTestData(1.0);
 //		additionalData.setStyle("strokeColor=red");
 //		chart.getDatasets().add(additionalData);

@@ -17,8 +17,8 @@ import de.gsi.chart.renderer.Renderer;
 import de.gsi.dataset.AxisDescription;
 import de.gsi.dataset.DataSet;
 import de.gsi.dataset.DataSet2D;
-import de.gsi.dataset.DataSet3D;
 import de.gsi.dataset.DataSetError;
+import de.gsi.dataset.GridDataSet;
 import de.gsi.dataset.event.EventListener;
 import de.gsi.dataset.locks.DataSetLock;
 import de.gsi.dataset.locks.DefaultDataSetLock;
@@ -100,9 +100,9 @@ public class MountainRangeRenderer extends ErrorDataSetRenderer implements Rende
             final DataSet dataSet = localDataSetList.get(dataSetIndex);
 
             // detect and fish-out DataSet3D, ignore others
-            if (dataSet instanceof DataSet3D) {
+            if (dataSet instanceof GridDataSet) {
                 dataSet.lock().readLockGuardOptimistic(() -> {
-                    final DataSet3D mData = (DataSet3D) dataSet;
+                    final GridDataSet mData = (GridDataSet) dataSet;
                     xWeakIndexMap.clear();
                     yWeakIndexMap.clear();
                     zRangeMin = Math.min(zRangeMin, mData.getAxisDescription(DIM_Z).getMin());
@@ -181,7 +181,7 @@ public class MountainRangeRenderer extends ErrorDataSetRenderer implements Rende
         private static final long serialVersionUID = 3914728138839091421L;
         private final transient DataSetLock<DataSet> lock = new DefaultDataSetLock<>(Demux3dTo2dDataSet.this);
         private final AtomicBoolean autoNotification = new AtomicBoolean(true);
-        private final DataSet3D dataSet;
+        private final GridDataSet dataSet;
         private final int yIndex;
         private final int yMax;
         private double yShift;
@@ -190,7 +190,7 @@ public class MountainRangeRenderer extends ErrorDataSetRenderer implements Rende
                 new DefaultAxisDescription(Demux3dTo2dDataSet.this, "x-Axis", "a.u."), //
                 new DefaultAxisDescription(Demux3dTo2dDataSet.this, "y-Axis", "a.u.")));
 
-        public Demux3dTo2dDataSet(final DataSet3D sourceDataSet, final int selectedYIndex) {
+        public Demux3dTo2dDataSet(final GridDataSet sourceDataSet, final int selectedYIndex) {
             super();
             dataSet = sourceDataSet;
             yIndex = selectedYIndex;
@@ -256,7 +256,7 @@ public class MountainRangeRenderer extends ErrorDataSetRenderer implements Rende
 
         @Override
         public double getX(final int i) {
-            return dataSet.getX(i);
+            return dataSet.get(DIM_X, i);
         }
 
         @Override
@@ -279,7 +279,7 @@ public class MountainRangeRenderer extends ErrorDataSetRenderer implements Rende
             // added computation of hash since this is recomputed quite often
             // (and the same) for each slice
             return xWeakIndexMap.computeIfAbsent(x, key -> {
-                Integer ret = dataSet.getXIndex(x);
+                Integer ret = dataSet.getIndex(DIM_X, x);
                 xWeakIndexMap.put(x, ret);
                 return ret;
             });
@@ -287,7 +287,7 @@ public class MountainRangeRenderer extends ErrorDataSetRenderer implements Rende
 
         @Override
         public double getY(final int i) {
-            return dataSet.getZ(i, yIndex) + yShift;
+            return dataSet.getValue(dataSet.getNGrid(), i, yIndex) + yShift;
         }
 
         @Override
@@ -295,7 +295,7 @@ public class MountainRangeRenderer extends ErrorDataSetRenderer implements Rende
             // added computation of hash since this is recomputed quite often
             // (and the same) for each slice
             return yWeakIndexMap.computeIfAbsent(y, key -> {
-                Integer ret = dataSet.getYIndex(y);
+                Integer ret = dataSet.getIndex(DIM_Y, y);
                 yWeakIndexMap.put(y, ret);
                 return ret;
             });

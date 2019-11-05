@@ -7,8 +7,8 @@ import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 
-import de.gsi.dataset.DataSet3D;
 import de.gsi.dataset.DataSetMetaData;
+import de.gsi.dataset.GridDataSet;
 import de.gsi.dataset.Histogram1D;
 import de.gsi.dataset.Histogram2D;
 import de.gsi.dataset.event.UpdatedDataEvent;
@@ -16,7 +16,7 @@ import de.gsi.dataset.event.UpdatedDataEvent;
 /**
  * @author rstein
  */
-public class Histogram2 extends AbstractHistogram implements Histogram2D, DataSet3D {
+public class Histogram2 extends AbstractHistogram implements Histogram2D, GridDataSet {
     private static final long serialVersionUID = -5583974934398282519L;
     protected final Histogram xProjection;
     protected final Histogram yProjection;
@@ -60,40 +60,12 @@ public class Histogram2 extends AbstractHistogram implements Histogram2D, DataSe
         super.reset();
     }
 
-    /*
-     * (non-Javadoc)
-     *
-     * @see de.gsi.dataset.DataSet3D#getZ(int, int)
-     */
-    @Override
-    public double getZ(int xIndex, int yIndex) {
-        final int bin = (yIndex + 1) * getDataCount() + xIndex + 1;
-        return super.getBinContent(bin);
-    }
-
-    //	/*
-    //	 * (non-Javadoc)
-    //	 *
-    //	 * @see de.gsi.dataset.DataSet#getX(int)
-    //	 */
-    //	@Override
-    //	public double getX(int i) {
-    //		return getBinCenter(DIM_X, i + 1);
-    //	}
-    //
-    //	/*
-    //	 * (non-Javadoc)
-    //	 *
-    //	 * @see de.gsi.dataset.DataSet#getY(int)
-    //	 */
-    //	@Override
-    //	public double getY(int i) {
-    //		return getBinCenter(DIM_Y, i + 1);
-    //	}
-
     @Override
     public double get(final int dimIndex, final int binIndex) {
+        if (dimIndex < 2) {
         return getBinCenter(dimIndex, binIndex + 1);
+        }
+        return super.getBinContent(binIndex);
     }
 
     /*
@@ -143,11 +115,11 @@ public class Histogram2 extends AbstractHistogram implements Histogram2D, DataSe
         double sum = 0.0;
         if (dimIndex == DIM_X) {
             for (int i = 0; i < getDataCount(dimIndex); i++) {
-                sum += getZ(i - 1, bin - 1);
+                sum += getValue(2, i - 1, bin - 1);
             }
         } else {
             for (int i = 0; i < getDataCount(DIM_Y); i++) {
-                sum += getZ(bin - 1, i - 1);
+                sum += getValue(2, bin - 1, i - 1);
             }
         }
         return sum;
@@ -182,12 +154,36 @@ public class Histogram2 extends AbstractHistogram implements Histogram2D, DataSe
 
     @Override
     public double getValue(int dimIndex, double x) {
-        // TODO Auto-generated method stub
-        return 0;
+        throw new UnsupportedOperationException("Deprecated Method not implemented");
     }
 
     @Override
     public int getDataCount() {
         return getDataCount(DIM_X);
+    }
+
+    @Override
+    public int getNGrid() {
+                return 2;
+    }
+
+    @Override
+    public double getGrid(int dimIndex, int index) {
+        if (dimIndex < 2) {
+            return getBinCenter(dimIndex, index + 1);
+        }
+        return 0;
+    }
+
+    @Override
+    public double getValue(int dimIndex, int... index) {
+        if (index.length != getNGrid()) {
+            throw new IllegalArgumentException("Wrong Number of indices provided");
+        }
+        if (dimIndex < 2) {
+            return getBinCenter(dimIndex, index[dimIndex] + 1);
+        }
+        final int bin = (index[1] + 1) * getDataCount() + index[0] + 1;
+        return super.getBinContent(bin);
     }
 }

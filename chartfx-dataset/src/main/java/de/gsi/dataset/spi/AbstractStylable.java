@@ -11,8 +11,8 @@ import de.gsi.dataset.DataSet;
  * @param <D> java generics handling of DataSet for derived classes (needed for fluent design)
  */
 public abstract class AbstractStylable<D extends DataSet> implements DataSet {
+    private static final long serialVersionUID = 19092501;
     private String style = "";
-    private String styleClass = ""; //TODO: check whether this is needed
 
     AbstractStylable() {
         super();

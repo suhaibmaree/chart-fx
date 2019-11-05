@@ -1,5 +1,7 @@
 package de.gsi.math.samples;
 
+import static de.gsi.dataset.DataSet.DIM_Z;
+
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.util.Arrays;
@@ -8,11 +10,13 @@ import java.util.Random;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import de.gsi.chart.renderer.spi.ContourDataSetRenderer;
+import de.gsi.chart.axes.spi.ColorGradientAxis;
+import de.gsi.chart.renderer.spi.HeatMapRenderer;
 import de.gsi.chart.renderer.spi.utils.ColorGradient;
+import de.gsi.chart.ui.geometry.Side;
 import de.gsi.chart.utils.AxisSynchronizer;
 import de.gsi.dataset.DataSet;
-import de.gsi.dataset.DataSet3D;
+import de.gsi.dataset.GridDataSet;
 import de.gsi.dataset.spi.DefaultDataSet;
 import de.gsi.math.TMath;
 import de.gsi.math.samples.utils.AbstractDemoApplication;
@@ -33,12 +37,12 @@ public class WaveletScalogram extends AbstractDemoApplication {
 	private static final Logger LOGGER = LoggerFactory.getLogger(WaveletScalogram.class);
     private static final int MAX_POINTS = 1024;
     public static final boolean LOAD_EXAMPLE_DATA = true;
-    private DataSet3D fdataset;
+    private GridDataSet fdataset;
     private DefaultDataSet fwavelet;
     private DefaultDataSet ffourier;
     private double[] yValues;
 
-    private DataSet3D createDataSet() {
+    private GridDataSet createDataSet() {
         final double nu = 2 * 25;
         final int nQuantx = 512;
         final int nQuanty = 1024;
@@ -92,7 +96,7 @@ public class WaveletScalogram extends AbstractDemoApplication {
             int count = 0;
 
             for (int j = nboundary; j < fdataset.getDataCount(DataSet.DIM_X) - nboundary; j++) {
-                val += fdataset.getZ(j, i);
+                val += fdataset.getValue(DIM_Z, j, i);
                 count++;
             }
             magWavelet[i] = val / count;
@@ -168,12 +172,17 @@ public class WaveletScalogram extends AbstractDemoApplication {
         chart1.getYAxis().setAutoRangePadding(0.0);
         chart1.getYAxis().setName("frequency");
         chart1.getYAxis().setUnit("fs");
-        final ContourDataSetRenderer contourChartRenderer = new ContourDataSetRenderer();
-        chart1.getRenderers().set(0, contourChartRenderer);
-        contourChartRenderer.setColorGradient(ColorGradient.RAINBOW);
+        final HeatMapRenderer heatMapRenderer = new HeatMapRenderer();
+        chart1.getRenderers().set(0, heatMapRenderer);
+        heatMapRenderer.setXAxis(chart1.getXAxis());
+        heatMapRenderer.setYAxis(chart1.getYAxis());
+        ColorGradientAxis zAxis = new ColorGradientAxis("zAxis", ColorGradient.RAINBOW);
+        heatMapRenderer.setZAxis(zAxis);
+        zAxis.setSide(Side.RIGHT);
+        chart1.getAxes().add(zAxis);
         // contourChartRenderer.setColorGradient(ColorGradient.JET);
         // contourChartRenderer.setColorGradient(ColorGradient.TOPO_EXT);
-        contourChartRenderer.getDatasets().add(createDataSet());
+        heatMapRenderer.getDatasets().add(createDataSet());
 
         final DemoChart chart2 = new DemoChart();
         chart2.getXAxis().setName("frequency");

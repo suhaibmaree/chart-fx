@@ -2,12 +2,15 @@ package de.gsi.dataset.spi;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import de.gsi.dataset.DataSet;
+import de.gsi.dataset.GridDataSet;
+import de.gsi.dataset.spi.TransposedDataSet.TransposedGridDataSet;
 
 /**
  * @author akrimm
@@ -49,5 +52,20 @@ public class TransposedDataSetTest {
 
         assertEquals(dataSet.get(0, 0), transposed2.get(1, 0));
         assertEquals(dataSet.get(1, 0), transposed2.get(0, 0));
+
     }
+
+    @Test
+    public void testWithGridDataSet() {
+        GridDataSet dataSet = new DoubleGridDataSet("Test 3D Dataset", 2,
+                new double[][] { { 1.0, 2.0, 3.0 }, { 0.001, 4.2 }, { 1.3, 3.7, 4.2, 2.3, 1.8, 5.0 } });
+
+        TransposedDataSet transposedDataSet = TransposedDataSet.transpose(dataSet);
+        
+        assertTrue(transposedDataSet instanceof GridDataSet);
+        TransposedGridDataSet transposedGridDataSet = (TransposedGridDataSet) transposedDataSet;
+        
+        assertEquals(dataSet.getValue(2, 2, 1), transposedGridDataSet.getValue(2, 1, 2));
+    }
+
 }

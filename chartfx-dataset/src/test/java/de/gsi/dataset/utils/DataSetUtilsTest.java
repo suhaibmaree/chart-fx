@@ -1,5 +1,8 @@
 package de.gsi.dataset.utils;
 
+import static de.gsi.dataset.DataSet.DIM_X;
+import static de.gsi.dataset.DataSet.DIM_Y;
+import static de.gsi.dataset.DataSet.DIM_Z;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -18,12 +21,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import de.gsi.dataset.DataSet;
-import de.gsi.dataset.DataSet3D;
+import de.gsi.dataset.GridDataSet;
 import de.gsi.dataset.event.AxisNameChangeEvent;
 import de.gsi.dataset.spi.DataSetBuilder;
 import de.gsi.dataset.spi.DefaultDataSet;
-import de.gsi.dataset.spi.DoubleDataSet3D;
 import de.gsi.dataset.spi.DoubleErrorDataSet;
+import de.gsi.dataset.spi.DoubleGridDataSet;
 
 /**
  * @author akrimm
@@ -105,30 +108,30 @@ public class DataSetUtilsTest {
         int ny = 2;
         double[] yvalues = new double[] { 0.001, 4.2 };
         int n = 6;
-        double[][] zvalues = new double[][] { { 1.3, 3.7, 4.2 }, { 2.3, 1.8, 5.0 } };
-        DataSet3D dataSet = new DoubleDataSet3D("Test 3D Dataset", xvalues, yvalues, zvalues);
+        double[] zvalues = new double[] {1.3, 3.7, 4.2, 2.3, 1.8, 5.0 };
+        GridDataSet dataSet = new DoubleGridDataSet("Test 3D Dataset", 2, new double[][] {xvalues, yvalues, zvalues});
         dataSet.getAxisDescription(0).set("U", "V", 1.0, 3.0);
         dataSet.getAxisDescription(1).set("I", "A", 0.001, 4.2);
         dataSet.getAxisDescription(2).set("P", "W", 1.3, 4.2);
         // assert that dataSet was created correctly
-        assertArrayEquals(xvalues, dataSet.getXValues(), EPSILON);
-        assertArrayEquals(yvalues, dataSet.getYValues(), EPSILON);
+        assertArrayEquals(xvalues, dataSet.getGrid(DIM_X), EPSILON);
+        assertArrayEquals(yvalues, dataSet.getGrid(DIM_Y), EPSILON);
         // write and read dataSet
         ByteArrayOutputStream byteBuffer = new ByteArrayOutputStream();
         DataSetUtils.writeDataSetToByteArray(dataSet, byteBuffer, binary, useFloat);
         DataSet dataSetRead = DataSetUtils.readDataSetFromByteArray(byteBuffer.toByteArray());
         // assert that DataSet was written and read correctly
-        assertTrue(dataSetRead instanceof DataSet3D);
-        DataSet3D dataSetRead3D = (DataSet3D) dataSetRead;
-        assertEquals(n, dataSetRead.getDataCount(DataSet.DIM_Z));
+        assertTrue(dataSetRead instanceof GridDataSet);
+        GridDataSet gridDataSetRead = (GridDataSet) dataSetRead;
+        assertEquals(n, dataSetRead.getDataCount(DIM_Z));
         assertEquals(dataSet.getName(), dataSetRead.getName());
-        assertEquals(3, dataSetRead3D.getDataCount(DataSet.DIM_X));
-        assertEquals(2, dataSetRead3D.getDataCount(DataSet.DIM_Y));
-        assertArrayEquals(xvalues, dataSetRead.getValues(DataSet.DIM_X), EPSILON);
-        assertArrayEquals(yvalues, dataSetRead.getValues(DataSet.DIM_Y), EPSILON);
+        assertEquals(3, gridDataSetRead.getDataCount(DIM_X));
+        assertEquals(2, gridDataSetRead.getDataCount(DIM_Y));
+        assertArrayEquals(xvalues, gridDataSetRead.getGrid(DIM_X), EPSILON);
+        assertArrayEquals(yvalues, gridDataSetRead.getGrid(DIM_Y), EPSILON);
         for (int ix = 1; ix < nx; ix++) {
             for (int iy = 1; iy < ny; iy++) {
-                assertEquals(zvalues[iy][ix], dataSetRead3D.getZ(ix, iy), EPSILON);
+                assertEquals(zvalues[iy * nx + ix], gridDataSetRead.getValue(DIM_Z, ix, iy), EPSILON);
             }
         }
         for (int i = 0; i < 3; i++) {

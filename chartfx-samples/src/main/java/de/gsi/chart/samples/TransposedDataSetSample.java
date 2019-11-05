@@ -11,12 +11,12 @@ import de.gsi.chart.XYChart;
 import de.gsi.chart.plugins.EditAxis;
 import de.gsi.chart.plugins.UpdateAxisLabels;
 import de.gsi.chart.plugins.Zoomer;
-import de.gsi.chart.renderer.spi.ContourDataSetRenderer;
 import de.gsi.chart.renderer.spi.ErrorDataSetRenderer;
+import de.gsi.chart.renderer.spi.HeatMapRenderer;
 import de.gsi.dataset.DataSet;
-import de.gsi.dataset.DataSet3D;
+import de.gsi.dataset.GridDataSet;
 import de.gsi.dataset.spi.DataSetBuilder;
-import de.gsi.dataset.spi.DoubleDataSet3D;
+import de.gsi.dataset.spi.DoubleGridDataSet;
 import de.gsi.dataset.spi.TransposedDataSet;
 import javafx.application.Application;
 import javafx.application.Platform;
@@ -64,17 +64,15 @@ public class TransposedDataSetSample extends Application {
 
         // init default 3D Chart with HeatMapRenderer
         final XYChart chart2 = getDefaultChart();
-        final ContourDataSetRenderer contourRenderer = new ContourDataSetRenderer();
-        chart2.getRenderers().setAll(contourRenderer);
+        final HeatMapRenderer heatmapRenderer = new HeatMapRenderer();
+        chart2.getRenderers().setAll(heatmapRenderer);
 
-//        final DataSet3D dataSet2 = new DoubleDataSet3D("test 3D", new double[] { 0, 10, 20, 30 },
-//                new double[] { 0, 1, 2, 3 },
-//                new double[][] { { 0.1, 0, 0, 0.2 }, { 0.3, 0.4, 0.5, 0.6 }, { 0.7, 0, 0, 1 }, { 1, 1, 1, 1 } });
-        final DataSet3D dataSet2 = createTestData();
+        final GridDataSet dataSet2 = new DoubleGridDataSet("test 3D", 2, new double[][] { { 0, 10, 20, 30 },
+                { 0, 1, 2, 3 }, { 0.1, 0, 0, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0, 0, 1, 1, 1, 1, 1 } });
         dataSet2.getAxisDescription(0).set("x-axis", "x-unit");
         dataSet2.getAxisDescription(1).set("y-axis", "y-unit");
         final TransposedDataSet transposedDataSet2 = TransposedDataSet.transpose(dataSet2, false);
-        contourRenderer.getDatasets().add(transposedDataSet2);
+        heatmapRenderer.getDatasets().add(transposedDataSet2);
 
         // init ToolBar items to illustrate the two different methods to flip the DataSet
         final CheckBox cbTransposed = new CheckBox("flip data set");
@@ -156,32 +154,6 @@ public class TransposedDataSetSample extends Application {
         dataSet.getAxisDescription(1).set("y-axis", "y-unit");
 
         return dataSet;
-    }
-    
-    private static DataSet3D createTestData() {
-        final int nPoints = 1000;
-        final double f = 0.1;
-        final double[] x = new double[nPoints];
-        final double[] y = new double[nPoints];
-        for (int i = 0; i < x.length; i++) {
-            final double val = (i / (double) x.length - 0.5) * 10;
-            x[i] = val;
-            y[i] = val;
-        }
-        final double[][] z = new double[x.length][y.length];
-        for (int yIndex = 0; yIndex < y.length; yIndex++) {
-            for (int xIndex = 0; xIndex < x.length; xIndex++) {
-                // if (x[xIndex]>=-3 && x[xIndex]<=-2 && y[yIndex]>=1 &&
-                // y[yIndex]<=2) {
-                // z[xIndex][yIndex] = 200;
-                // } else {
-                // z[xIndex][yIndex] = 1000.0;
-                // }
-                z[xIndex][yIndex] = Math.sin(2.0 * Math.PI * f * x[xIndex]) * Math.cos(2.0 * Math.PI * f * y[yIndex]);
-            }
-        }
-
-        return new DoubleDataSet3D("3D test data", x, y, z);
     }
 
     /**

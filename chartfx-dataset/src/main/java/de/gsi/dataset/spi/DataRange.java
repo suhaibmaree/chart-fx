@@ -90,6 +90,16 @@ public class DataRange {
             retVal = true;
         }
 
+        if (!Double.isFinite(min)) {
+            min = value;
+            retVal = true;
+        }
+
+        if (!Double.isFinite(max)) {
+            max = value;
+            retVal = true;
+        }
+
         return retVal;
     }
 
@@ -134,6 +144,7 @@ public class DataRange {
     /**
      * Empties this DataRange. After calling this method this data range becomes
      * undefined.
+     * 
      * @return <code>true</code> if the values were valid before
      * @see #isDefined()
      */

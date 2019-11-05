@@ -50,7 +50,7 @@ public interface Histogram2D {
 		//Histogram1D fitSlices[X,Y,Z]
 	
 	 /**
-     * Returns Z coordinate for the specified data point.
+     * Returns Z coordinate for the specified grid multiindex.
      *
      * @param xIndex
      *            index of X coordinate
@@ -58,6 +58,6 @@ public interface Histogram2D {
      *            index of Y coordinate
      * @return Z coordinate
      */
-    double getZ(int xIndex, int yIndex);
+    double getValue(int dimIndex, int... index);
 
 }

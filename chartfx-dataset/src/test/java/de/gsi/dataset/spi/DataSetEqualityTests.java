@@ -42,7 +42,6 @@ public class DataSetEqualityTests {
         assertEquals(new DefaultErrorDataSet("default"), new DefaultErrorDataSet("default"));
         assertEquals(new DoubleDataSet("default"), new DoubleDataSet("default"));
         assertEquals(new DoubleErrorDataSet("default"), new DoubleErrorDataSet("default"));
-        assertEquals(new DoubleDataSet3D("default"), new DoubleDataSet3D("default"));
         assertEquals(new FifoDoubleErrorDataSet("default", 10), new FifoDoubleErrorDataSet("default", 11));
         assertEquals(new FragmentedDataSet("default"), new FragmentedDataSet("default"));
         assertEquals(new Histogram("default", 10, 0.0, 1.0), new Histogram("default", 10, 0.0, 1.0));

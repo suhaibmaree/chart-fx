@@ -307,8 +307,7 @@ public class DataSetToByteArraySample {
         IoBufferSerialiser serialiser = new IoBufferSerialiser(byteBuffer);
         byteBuffer.reset(); // reset to read position (==0)
         final DoubleErrorDataSet copy = new DoubleErrorDataSet("init", N_SAMPLES);
-        copy.setErrorType(DIM_X, ErrorType.NO_ERROR);
-        copy.setErrorType(DIM_Y, ErrorType.NO_ERROR);
+        copy.setErrorType(ErrorType.NO_ERROR);
 
         DataSetWrapper dsOrig = new DataSetWrapper();
         dsOrig.source = original;

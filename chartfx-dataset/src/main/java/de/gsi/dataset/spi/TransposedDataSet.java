@@ -10,7 +10,7 @@ import org.slf4j.LoggerFactory;
 
 import de.gsi.dataset.AxisDescription;
 import de.gsi.dataset.DataSet;
-import de.gsi.dataset.DataSet3D;
+import de.gsi.dataset.GridDataSet;
 import de.gsi.dataset.event.AxisChangeEvent;
 import de.gsi.dataset.event.EventListener;
 import de.gsi.dataset.locks.DataSetLock;
@@ -27,8 +27,8 @@ import de.gsi.dataset.locks.DataSetLock;
 public class TransposedDataSet implements DataSet {
     private static final Logger LOGGER = LoggerFactory.getLogger(TransposedDataSet.class);
     private static final long serialVersionUID = 2019092401;
-    final protected DataSet dataSet;
-    protected int[] permutation;
+    private final DataSet dataSet;
+    private int[] permutation;
     private boolean transposed;
 
     private TransposedDataSet(final DataSet dataSet, final boolean transposed) {
@@ -47,10 +47,16 @@ public class TransposedDataSet implements DataSet {
         }
     }
 
+    /**
+     * @param dataSet reference to source data set
+     * @param permutation array containing permutation of dimension index (e.g. '0,1,2,...' for normal and
+     *            '1,0,2,...' for inverting the first with second axis)
+     */
     private TransposedDataSet(final DataSet dataSet, final int[] permutation) {
         if (dataSet == null) {
             throw new IllegalArgumentException("DataSet is null");
         }
+        
         if (permutation == null) {
             throw new IllegalArgumentException("permutation is null");
         }
@@ -218,8 +224,8 @@ public class TransposedDataSet implements DataSet {
     }
 
     public static TransposedDataSet permute(DataSet dataSet, int[] permutation) {
-        if (dataSet instanceof DataSet3D) {
-            return new TransposedDataSet3D((DataSet3D) dataSet, permutation);
+        if (dataSet instanceof GridDataSet) {
+            return new TransposedGridDataSet((GridDataSet) dataSet, permutation);
         }
         return new TransposedDataSet(dataSet, permutation);
     }
@@ -229,8 +235,8 @@ public class TransposedDataSet implements DataSet {
     }
 
     public static TransposedDataSet transpose(DataSet dataSet, boolean transpose) {
-        if (dataSet instanceof DataSet3D) {
-            return new TransposedDataSet3D((DataSet3D) dataSet, transpose);
+        if (dataSet instanceof GridDataSet) {
+            return new TransposedGridDataSet((GridDataSet) dataSet, transpose);
         }
         return new TransposedDataSet(dataSet, transpose);
     }
@@ -241,70 +247,69 @@ public class TransposedDataSet implements DataSet {
      * 
      * @author Alexander Krimm
      */
-    public static class TransposedDataSet3D extends TransposedDataSet implements DataSet3D {
+    public static class TransposedGridDataSet extends TransposedDataSet implements GridDataSet {
         private static final long serialVersionUID = 19092601;
+        private int nGrid;
 
-        private TransposedDataSet3D(final DataSet3D dataSet, final boolean transposed) {
+        private TransposedGridDataSet(final GridDataSet dataSet, final boolean transposed) {
             super(dataSet, transposed);
+            nGrid = dataSet.getNGrid();
         }
 
         /**
          * @param dataSet the source DataSet to initialise from
          * @param permutation the initial permutation index
+
          */
-        private TransposedDataSet3D(final DataSet3D dataSet, final int[] permutation) {
+        private TransposedGridDataSet(final GridDataSet dataSet, final int[] permutation) {
             super(dataSet, permutation);
-            if (permutation[0] > 1 || permutation[1] > 1 || permutation[2] != 2) {
-                throw new IllegalArgumentException(
-                        "cannot swap first x or y dimension with z dimension (index missmatch)");
+            for (int i = 0; i < dataSet.getNGrid(); i++) {
+                if (permutation[i] >= dataSet.getNGrid()) {
+                    throw new IllegalArgumentException(
+                            "Permuting the non-grid dimensions to grid-dimensions is not supported");
+                }
             }
-
-        }
-
-        @Override
-        public int getDataCount() {
-            return ((DataSet3D) dataSet).getDataCount();
-        }
-
-        @Override
-        public int getXIndex(double x) {
-            switch (permutation[0]) {
-            case 0:
-                return ((DataSet3D) dataSet).getXIndex(x);
-            case 1:
-                return ((DataSet3D) dataSet).getYIndex(x);
-            default:
-                return 0;
-            }
-        }
-
-        @Override
-        public int getYIndex(double y) {
-            switch (permutation[1]) {
-            case 0:
-                return ((DataSet3D) dataSet).getXIndex(y);
-            case 1:
-                return ((DataSet3D) dataSet).getYIndex(y);
-            default:
-                return 0;
-            }
-        }
-
-        @Override
-        public double getZ(int xIndex, int yIndex) {
-            return ((DataSet3D) dataSet).getZ(permutation[0] == 0 ? xIndex : yIndex,
-                    permutation[1] == 0 ? xIndex : yIndex);
         }
 
         @Override
         public void setPermutation(final int[] permutation) {
-            this.lock().writeLockGuard(() -> {
-                if (permutation[0] > 1 || permutation[1] > 1 || permutation[2] != 2) {
-                    throw new IllegalArgumentException(
-                            "cannot swap first x or y dimension with z dimension (index missmatch)");
+            boolean inGrid = true;
+            for (int i = 0; i < permutation.length; i++) {
+                if (inGrid) {
+                    if (permutation[i] >= ((GridDataSet) super.dataSet).getNGrid()) {
+                        inGrid = false;
+                        nGrid = i;
+                    }
+                } else {
+                    if (permutation[i] < ((GridDataSet) super.dataSet).getNGrid()) {
+                        throw new IllegalArgumentException(
+                                "All grid dimensions must be before value dimensions in the permutation");
+                    }
                 }
-                super.setPermutation(permutation);
-            });
+            }
+            super.setPermutation(permutation);
+        }
+
+        @Override
+        public int getNGrid() {
+            return nGrid;
+        }
+
+        @Override
+        public double getGrid(final int dimIndex, final int index) {
+            return ((GridDataSet) super.dataSet).getGrid(super.permutation[dimIndex], index);
+        }
+
+        @Override
+        public double getValue(final int dimIndex, final int... index) {
+            GridDataSet gridDataSet = (GridDataSet) super.dataSet;
+            int[] permutedIndex = new int[gridDataSet.getNGrid()];
+            for (int i = 0; i < gridDataSet.getNGrid(); i++) {
+                int perm = i < super.permutation.length ? super.permutation[i] : i;
+                int idx = perm < index.length ? index[perm] : 0;
+                permutedIndex[i] = idx;
+            }
+            return gridDataSet.getValue(super.permutation[dimIndex], permutedIndex);
         }
     }
 }

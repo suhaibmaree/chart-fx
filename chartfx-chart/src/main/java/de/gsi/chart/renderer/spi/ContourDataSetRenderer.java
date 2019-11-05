@@ -25,7 +25,7 @@ import de.gsi.chart.renderer.spi.marchingsquares.MarchingSquares;
 import de.gsi.chart.renderer.spi.utils.ColorGradient;
 import de.gsi.chart.ui.geometry.Side;
 import de.gsi.dataset.DataSet;
-import de.gsi.dataset.DataSet3D;
+import de.gsi.dataset.GridDataSet;
 import de.gsi.dataset.utils.ProcessingProfiler;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.IntegerProperty;
@@ -196,11 +196,11 @@ public class ContourDataSetRenderer extends AbstractDataSetManagement<ContourDat
         final Axis xAxis = chart.getXAxis();
         final Axis yAxis = chart.getYAxis();
         final Axis zAxis = getZAxis();
-        if (!(dataSet instanceof DataSet3D)) {
+        if (!(dataSet instanceof GridDataSet)) {
             return;
         }
 
-        localCache.dataSet3D = (DataSet3D)dataSet;
+        localCache.gridDataSet = (GridDataSet)dataSet;
 
         localCache.xAxisWidth = xAxis.getWidth();
         localCache.xMin = xAxis.getValueForDisplay(0);
@@ -218,10 +218,10 @@ public class ContourDataSetRenderer extends AbstractDataSetManagement<ContourDat
         localCache.ySize = Math.abs(localCache.indexYMax - localCache.indexYMin);
 
         if (computeLocalRange()) {
-            ContourDataSetRenderer.computeZrange(zAxis, (DataSet3D)dataSet, localCache.indexXMin, localCache.indexXMax,
+            ContourDataSetRenderer.computeZrange(zAxis, (GridDataSet)dataSet, localCache.indexXMin, localCache.indexXMax,
                     localCache.indexYMin, localCache.indexYMax);
         } else {
-            ContourDataSetRenderer.computeZrange(zAxis, (DataSet3D)dataSet, 0, dataSet.getDataCount(DIM_X) - 1, 0,
+            ContourDataSetRenderer.computeZrange(zAxis, (GridDataSet)dataSet, 0, dataSet.getDataCount(DIM_X) - 1, 0,
                     dataSet.getDataCount(DIM_Y) - 1);
         }
 
@@ -271,7 +271,7 @@ public class ContourDataSetRenderer extends AbstractDataSetManagement<ContourDat
         final double zMax = axisTransform.forward(lCache.zMax);
         final int indexXMin = lCache.indexXMin;
         final int indexYMax = lCache.indexYMax;
-        final DataSet3D dataSet = lCache.dataSet3D;
+        final GridDataSet dataSet = lCache.gridDataSet;
 
         final double[] levels = new double[getNumberQuantisationLevels()];
         for (int i = 0; i < levels.length; i++) {
@@ -280,7 +280,7 @@ public class ContourDataSetRenderer extends AbstractDataSetManagement<ContourDat
         final double[][] data = new double[lCache.ySize][lCache.xSize];
         for (int xIndex = lCache.indexXMin; xIndex < lCache.indexXMax; xIndex++) {
             for (int yIndex = lCache.indexYMin; yIndex < lCache.indexYMax; yIndex++) {
-                final double z = dataSet.getZ(xIndex, yIndex);
+                final double z = dataSet.getValue(dataSet.getNGrid(), xIndex, yIndex);
                 final double offset = (axisTransform.forward(z) - zMin) / (zMax - zMin);
                 data[indexYMax - 1 - yIndex][xIndex - indexXMin] = offset;
             }
@@ -327,7 +327,7 @@ public class ContourDataSetRenderer extends AbstractDataSetManagement<ContourDat
         final int indexXMax = lCache.indexXMax;
         final int indexYMin = lCache.indexYMin;
         final int indexYMax = lCache.indexYMax;
-        final DataSet3D dataSet = lCache.dataSet3D;
+        final GridDataSet dataSet = lCache.gridDataSet;
 
         getNumberQuantisationLevels();
 
@@ -345,7 +345,7 @@ public class ContourDataSetRenderer extends AbstractDataSetManagement<ContourDat
         // setup input
         for (int xIndex = indexXMin; xIndex < indexXMax; xIndex++) {
             for (int yIndex = indexYMin; yIndex < indexYMax; yIndex++) {
-                final double z = dataSet.getZ(xIndex, yIndex);
+                final double z = dataSet.getValue(dataSet.getNGrid(), xIndex, yIndex);
                 final int x = xIndex - indexXMin;
                 final int y = indexYMax - 1 - yIndex;
                 final double offset = (axisTransform.forward(z) - zMin) / (zMax - zMin);
@@ -401,7 +401,7 @@ public class ContourDataSetRenderer extends AbstractDataSetManagement<ContourDat
         final int indexXMax = lCache.indexXMax;
         final int indexYMin = lCache.indexYMin;
         final int indexYMax = lCache.indexYMax;
-        final DataSet3D dataSet = lCache.dataSet3D;
+        final GridDataSet dataSet = lCache.gridDataSet;
 
         final int nQuant = getNumberQuantisationLevels();
 
@@ -409,7 +409,7 @@ public class ContourDataSetRenderer extends AbstractDataSetManagement<ContourDat
         final PixelWriter pixelWriter = image.getPixelWriter();
         for (int xIndex = indexXMin; xIndex < indexXMax; xIndex++) {
             for (int yIndex = indexYMin; yIndex < indexYMax; yIndex++) {
-                final double z = dataSet.getZ(xIndex, yIndex);
+                final double z = dataSet.getValue(dataSet.getNGrid(), xIndex, yIndex);
                 final double offset = (axisTransform.forward(z) - zMin) / (zMax - zMin);
                 final Color color = lCache.zInverted ? getColor(ContourDataSetRenderer.quantize(1 - offset, nQuant))
                         : getColor(ContourDataSetRenderer.quantize(offset, nQuant));
@@ -498,7 +498,7 @@ public class ContourDataSetRenderer extends AbstractDataSetManagement<ContourDat
         final int indexXMax = lCache.indexXMax;
         final int indexYMin = lCache.indexYMin;
         final int indexYMax = lCache.indexYMax;
-        final DataSet3D dataSet = lCache.dataSet3D;
+        final GridDataSet dataSet = lCache.gridDataSet;
 
         final int nQuant = getNumberQuantisationLevels();
 
@@ -539,7 +539,7 @@ public class ContourDataSetRenderer extends AbstractDataSetManagement<ContourDat
         final PixelWriter pixelWriter = image.getPixelWriter();
         for (int xIndex = indexXMin; xIndex < indexXMax; xIndex++) {
             for (int yIndex = indexYMin; yIndex < indexYMax; yIndex++) {
-                final double z = dataSet.getZ(xIndex, yIndex);
+                final double z = dataSet.getValue(dataSet.getNGrid(), xIndex, yIndex);
                 final double offset = (axisTransform.forward(z) - zMin) / (zMax - zMin);
                 final Color color = lCache.zInverted ? getColor(ContourDataSetRenderer.quantize(1 - offset, nQuant))
                         : getColor(ContourDataSetRenderer.quantize(offset, nQuant));
@@ -588,7 +588,7 @@ public class ContourDataSetRenderer extends AbstractDataSetManagement<ContourDat
         final double zMax = axisTransform.forward(lCache.zMax);
         final int indexXMin = lCache.indexXMin;
         final int indexYMax = lCache.indexYMax;
-        final DataSet3D dataSet = lCache.dataSet3D;
+        final GridDataSet dataSet = lCache.gridDataSet;
 
         final int nQuant = getNumberQuantisationLevels();
 
@@ -632,7 +632,7 @@ public class ContourDataSetRenderer extends AbstractDataSetManagement<ContourDat
                 // approximation)
                 for (int i = xMin; i < xMax; i++) {
                     for (int j = yMin; j < yMax; j++) {
-                        z += dataSet.getZ(indexXMin + clamp(i, xSize), indexYMax - clamp(j, ySize));
+                        z += dataSet.getValue(dataSet.getNGrid(), indexXMin + clamp(i, xSize), indexYMax - clamp(j, ySize));
                         count++;
                     }
                 }
@@ -703,7 +703,7 @@ public class ContourDataSetRenderer extends AbstractDataSetManagement<ContourDat
         final int indexXMax = lCache.indexXMax;
         final int indexYMin = lCache.indexYMin;
         final int indexYMax = lCache.indexYMax;
-        final DataSet3D dataSet = lCache.dataSet3D;
+        final GridDataSet dataSet = lCache.gridDataSet;
 
         final int nQuant = getNumberQuantisationLevels();
 
@@ -711,7 +711,7 @@ public class ContourDataSetRenderer extends AbstractDataSetManagement<ContourDat
         final PixelWriter pixelWriter = image.getPixelWriter();
         for (int xIndex = indexXMin; xIndex < indexXMax; xIndex++) {
             for (int yIndex = indexYMin; yIndex < indexYMax; yIndex++) {
-                final double z = dataSet.getZ(xIndex, yIndex);
+                final double z = dataSet.getValue(dataSet.getNGrid(), xIndex, yIndex);
                 final double offset = (axisTransform.forward(z) - zMin) / (zMax - zMin);
                 final Color color = lCache.zInverted ? getColor(ContourDataSetRenderer.quantize(1 - offset, nQuant))
                         : getColor(ContourDataSetRenderer.quantize(offset, nQuant));
@@ -730,7 +730,7 @@ public class ContourDataSetRenderer extends AbstractDataSetManagement<ContourDat
         ProcessingProfiler.getTimeDiff(start, "drawHeatMap");
     }
 
-    private static void computeZrange(final Axis zAxis, final DataSet3D dataSet3D, final int indexXMin,
+    private static void computeZrange(final Axis zAxis, final GridDataSet gridDataSet, final int indexXMin,
             final int indexXMax, final int indexYMin, final int indexYMax) {
         if (!zAxis.isAutoRanging() && !zAxis.isAutoGrowRanging()) {
             // keep previous and/or user-set axis range
@@ -741,7 +741,7 @@ public class ContourDataSetRenderer extends AbstractDataSetManagement<ContourDat
         double zMax = -Double.MAX_VALUE;
         for (int xIndex = indexXMin; xIndex < indexXMax; xIndex++) {
             for (int yIndex = indexYMin; yIndex < indexYMax; yIndex++) {
-                final double z = dataSet3D.getZ(xIndex, yIndex);
+                final double z = gridDataSet.getValue(gridDataSet.getNGrid(), xIndex, yIndex);
                 zMin = Math.min(zMin, z);
                 zMax = Math.max(zMax, z);
             }
@@ -1162,7 +1162,7 @@ public class ContourDataSetRenderer extends AbstractDataSetManagement<ContourDat
 
     private class Cache {
 
-        protected DataSet3D dataSet3D;
+        protected GridDataSet gridDataSet;
 
         protected double xAxisWidth;
         protected double xMin;

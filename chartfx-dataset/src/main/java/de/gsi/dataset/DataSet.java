@@ -122,7 +122,9 @@ public interface DataSet extends EventSource, Serializable {
      * @param dimIndex the dimension index (ie. '0' equals 'X', '1' equals 'Y')
      * @param x the new x coordinate
      * @return the y value
+     * @deprecated not well defined for higher dimensional datasets
      */
+    @Deprecated
     double getValue(final int dimIndex, final double x);
 
     /**

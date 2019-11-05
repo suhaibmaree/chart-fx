@@ -16,9 +16,8 @@ import de.gsi.chart.renderer.ContourType;
 import de.gsi.chart.renderer.spi.ContourDataSetRenderer;
 import de.gsi.chart.renderer.spi.utils.ColorGradient;
 import de.gsi.chart.ui.geometry.Side;
-import de.gsi.dataset.DataSet;
-import de.gsi.dataset.DataSet3D;
-import de.gsi.dataset.spi.AbstractDataSet3D;
+import de.gsi.dataset.GridDataSet;
+import de.gsi.dataset.spi.DoubleGridDataSet;
 import de.gsi.dataset.utils.ProcessingProfiler;
 import javafx.application.Application;
 import javafx.scene.Scene;
@@ -145,7 +144,8 @@ public class ContourChartSample extends Application {
 
         contourRenderer.setContourType(colorMap); // false: for color gradient map, true: for true contour map
         contourRenderer.getDatasets().add(readImage());
-        // contourRenderer.getDatasets().add(createTestData());
+//        contourRenderer.getDatasets().add(createTestData());
+//        contourRenderer.getDatasets().add(createData());
 
         slider1.valueProperty().bindBidirectional(contourRenderer.quantisationLevelsProperty());
         slider1.valueProperty().addListener((ch, o, n) -> chart.requestLayout());
@@ -205,20 +205,20 @@ public class ContourChartSample extends Application {
         zAxis1.minProperty().bindBidirectional(zAxis2.minProperty());
     }
 
-    private DataSet3D createData() {
+    private static GridDataSet createData() {
         final double[] x = { -12, -9, -8, -7, -6, -5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 12 };
         final double[] y = x;
-        final double[][] z = new double[x.length][y.length];
+        final double[] z = new double[x.length * y.length];
         for (int yIndex = 0; yIndex < y.length; yIndex++) {
             for (int xIndex = 0; xIndex < x.length; xIndex++) {
-                z[xIndex][yIndex] = Math.sin(y[yIndex] * x[xIndex]);
+                z[xIndex + x.length * yIndex] = Math.sin(y[yIndex] * x[xIndex]);
             }
         }
 
-        return new DefaultData("demoDataSet", ContourChartSample.toNumbers(x), ContourChartSample.toNumbers(y), z);
+        return new DoubleGridDataSet("demoDataSet", 2, new double[][] {x, y, z});
     }
 
-    private DataSet3D createTestData() {
+    private static GridDataSet createTestData() {
         final int nPoints = 1000;
         final double f = 0.1;
         final double[] x = new double[nPoints];
@@ -228,7 +228,7 @@ public class ContourChartSample extends Application {
             x[i] = val;
             y[i] = val;
         }
-        final double[][] z = new double[x.length][y.length];
+        final double[] z = new double[x.length * y.length];
         for (int yIndex = 0; yIndex < y.length; yIndex++) {
             for (int xIndex = 0; xIndex < x.length; xIndex++) {
                 // if (x[xIndex]>=-3 && x[xIndex]<=-2 && y[yIndex]>=1 &&
@@ -237,30 +237,23 @@ public class ContourChartSample extends Application {
                 // } else {
                 // z[xIndex][yIndex] = 1000.0;
                 // }
-                z[xIndex][yIndex] = Math.sin(2.0 * Math.PI * f * x[xIndex]) * Math.cos(2.0 * Math.PI * f * y[yIndex]);
+                z[xIndex + x.length * yIndex ] = Math.sin(2.0 * Math.PI * f * x[xIndex]) * Math.cos(2.0 * Math.PI * f * y[yIndex]);
             }
         }
 
-        return new DefaultData("demoDataSet", ContourChartSample.toNumbers(x), ContourChartSample.toNumbers(y), z);
+        return new DoubleGridDataSet("demoDataSet", 2, new double[][] { x, y, z});
     }
 
-    private static Number[] toNumberArray(final String[] stringValues) {
-        final Number[] numberValues = new Number[stringValues.length];
+    private static double[] toDoubleArray(final String[] stringValues) {
+        final double[] numberValues = new double[stringValues.length];
         for (int i = 0; i < stringValues.length; i++) {
             numberValues[i] = Double.valueOf(stringValues[i]);
         }
         return numberValues;
     }
 
-    private static Number[] toNumbers(final double[] array) {
-        final Number[] result = new Number[array.length];
-        for (int i = 0; i < result.length; i++) {
-            result[i] = array[i];
-        }
-        return result;
-    }
 
-    public DataSet3D readImage() {
+    public GridDataSet readImage() {
         try (final BufferedReader reader = new BufferedReader(
                 new InputStreamReader(ContourChartSample.class.getResourceAsStream("./testdata/image.txt")))) {
             // final BufferedReader reader = new BufferedReader(new
@@ -273,17 +266,11 @@ public class ContourChartSample extends Application {
             reader.readLine();
             final String[] z = reader.readLine().split(" ");
 
-            final Number[] xValues = ContourChartSample.toNumberArray(x);
-            final Number[] yValues = ContourChartSample.toNumberArray(y);
+            final double[] xValues = ContourChartSample.toDoubleArray(x);
+            final double[] yValues = ContourChartSample.toDoubleArray(y);
+            final double[] zValues = ContourChartSample.toDoubleArray(z);
 
-            final double[][] zValues = new double[x.length][y.length];
-            int i = 0;
-            for (int yIdx = 0; yIdx < y.length; yIdx++) {
-                for (int xIdx = 0; xIdx < x.length; xIdx++) {
-                    zValues[xIdx][yIdx] = Double.parseDouble(z[i++]);
-                }
-            }
-            return new DefaultData("contour data", xValues, yValues, zValues);
+            return new DoubleGridDataSet("contour data", 2, new double[][] {xValues, yValues, zValues});
 
         } catch (final Exception e) {
             if (LOGGER.isErrorEnabled()) {
@@ -291,55 +278,6 @@ public class ContourChartSample extends Application {
             }
         }
         return null;
-    }
-
-    public class DefaultData extends AbstractDataSet3D<DefaultData> {
-        private final Number[] xValues;
-        private final Number[] yValues;
-        private final double[][] zValues;
-
-        DefaultData(final String name, final Number[] xValues, final Number[] yValues, final double[][] zValues) {
-            super(name);
-
-            this.xValues = xValues;
-            this.yValues = yValues;
-            this.zValues = zValues;
-        }
-
-        @Override
-        public double getZ(final int xIndex, final int yIndex) {
-            return zValues[xIndex][yIndex];
-        }
-
-        public void set(final int xIndex, final int yIndex, final double x, final double y, final double z) {
-            xValues[xIndex] = x;
-            yValues[yIndex] = y;
-            zValues[xIndex][yIndex] = z;
-
-        }
-
-        @Override
-        public int getDataCount(final int dimIndex) {
-            if (dimIndex == DataSet.DIM_X) {
-                return xValues.length;
-            }
-            return yValues.length;
-        }
-
-        @Override
-        public double getX(final int i) {
-            return xValues[i].doubleValue();
-        }
-
-        @Override
-        public double getY(final int i) {
-            return yValues[i].doubleValue();
-        }
-
-        @Override
-        public String getStyle(final int index) {
-            return null;
-        }
     }
 
     /**

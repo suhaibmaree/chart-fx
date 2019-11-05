@@ -21,7 +21,7 @@ import de.gsi.chart.renderer.spi.LabelledMarkerRenderer;
 import de.gsi.chart.ui.geometry.Side;
 import de.gsi.chart.utils.FXUtils;
 import de.gsi.dataset.DataSet;
-import de.gsi.dataset.DataSet3D;
+import de.gsi.dataset.GridDataSet;
 import de.gsi.dataset.utils.AssertUtils;
 import javafx.animation.KeyFrame;
 import javafx.animation.Timeline;
@@ -439,8 +439,8 @@ public class XYChart extends Chart {
         final Side side = axis.getSide();
         axis.getAutoRange().clear();
         dataSets.forEach(dataset -> {
-            if (dataset instanceof DataSet3D && (side == Side.RIGHT || side == Side.TOP)) {
-                final DataSet3D mDataSet = (DataSet3D) dataset;
+            if (dataset instanceof GridDataSet && (side == Side.RIGHT || side == Side.TOP)) {
+                final GridDataSet mDataSet = (GridDataSet) dataset;
                 axis.getAutoRange().add(mDataSet.getAxisDescription(2).getMin());
                 axis.getAutoRange().add(mDataSet.getAxisDescription(2).getMax());
             } else {
@@ -466,8 +466,8 @@ public class XYChart extends Chart {
             //                    dataset.recomputeLimits(dataset.getAxisDescriptions().indexOf(axisDescription));
             //                }
             //            }
-            if (dataset instanceof DataSet3D && (side == Side.RIGHT || side == Side.TOP)) {
-                final DataSet3D mDataSet = (DataSet3D) dataset;
+            if (dataset instanceof GridDataSet && (side == Side.RIGHT || side == Side.TOP)) {
+                final GridDataSet mDataSet = (GridDataSet) dataset;
                 dataMinMax.add(mDataSet.getAxisDescription(DIM_Z).getMin());
                 dataMinMax.add(mDataSet.getAxisDescription(DIM_Z).getMax());
             } else {

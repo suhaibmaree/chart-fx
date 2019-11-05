@@ -6,10 +6,12 @@ import de.gsi.dataset.DataSet3D;
 
 /**
  * An abstract implementation of <code>DataSet3D</code> interface.
- *
+ * 
+ * @deprecated in favor of dimensionality generalized DataSet and GridDataSet
  * @author rstein
  * @param <D> java generics handling of DataSet for derived classes (needed for fluent design)
  */
+@Deprecated
 public abstract class AbstractDataSet3D<D extends AbstractDataSet3D<D>> extends AbstractDataSet<D>
         implements DataSet3D {
     private static final long serialVersionUID = 2766945109681463872L;

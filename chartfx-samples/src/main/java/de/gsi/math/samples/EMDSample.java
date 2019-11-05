@@ -10,7 +10,7 @@ import org.slf4j.LoggerFactory;
 import de.gsi.chart.renderer.spi.ContourDataSetRenderer;
 import de.gsi.chart.renderer.spi.utils.ColorGradient;
 import de.gsi.dataset.DataSet;
-import de.gsi.dataset.DataSet3D;
+import de.gsi.dataset.GridDataSet;
 import de.gsi.dataset.spi.DefaultErrorDataSet;
 import de.gsi.math.TMath;
 import de.gsi.math.matrix.MatrixD;
@@ -27,10 +27,10 @@ import javafx.scene.layout.VBox;
  * @author rstein TODO: some fixes in EMD necessary
  */
 public class EMDSample extends AbstractDemoApplication {
-	private static final Logger LOGGER = LoggerFactory.getLogger(FourierSample.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(FourierSample.class);
     private static final int MAX_POINTS = 1024;
     private static final boolean LOAD_EXAMPLE_DATA = true;
-    private DataSet3D dataset;
+    private GridDataSet dataset;
     private DataSet[] fmodeDataSets = new DataSet[10];
     private double[][] fmodeData = new double[10][];
     private double[] yValues;
@@ -83,18 +83,18 @@ public class EMDSample extends AbstractDemoApplication {
         return Arrays.copyOf(yModel, yModel.length);
     }
 
-    private void sleep(int millis) {
+    private static void sleep(int millis) {
         try {
             Thread.sleep(millis);
         } catch (InterruptedException e) {
-        	if (LOGGER.isErrorEnabled()) {
-        		LOGGER.atError().setCause(e).log("sleep error");
-        	}
+            if (LOGGER.isErrorEnabled()) {
+                LOGGER.atError().setCause(e).log("sleep error");
+            }
             Thread.currentThread().interrupt();
         }
     }
 
-    private DataSet3D createDataSet() {
+    private GridDataSet createDataSet() {
         final int nQuantx = 1024;
         final int nQuanty = 1024;
 
@@ -117,9 +117,9 @@ public class EMDSample extends AbstractDemoApplication {
                 }
             } while (trafoHHT.isBusy());
         } catch (Exception e) {
-        	if (LOGGER.isErrorEnabled()) {
-        		LOGGER.atError().setCause(e).log("error during computation");
-        	}
+            if (LOGGER.isErrorEnabled()) {
+                LOGGER.atError().setCause(e).log("error during computation");
+            }
         }
 
         return dataset;
@@ -180,7 +180,7 @@ public class EMDSample extends AbstractDemoApplication {
         return new VBox(chart1, chart2);
     }
 
-    private double[] readDemoData(int index) {
+    private static double[] readDemoData(int index) {
         String fileName = index <= 1 ? "./rawDataCPS2.dat" : "./rawDataLHCInj.dat";
         try {
             try (BufferedReader reader = new BufferedReader(
@@ -202,9 +202,9 @@ public class EMDSample extends AbstractDemoApplication {
             }
 
         } catch (Exception e) {
-        	if (LOGGER.isErrorEnabled()) {
-        		LOGGER.atError().setCause(e).log("read data error");
-        	}
+            if (LOGGER.isErrorEnabled()) {
+                LOGGER.atError().setCause(e).log("read data error");
+            }
         }
 
         return new double[1000];

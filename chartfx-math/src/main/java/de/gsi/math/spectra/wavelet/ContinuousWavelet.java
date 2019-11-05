@@ -5,7 +5,8 @@ import java.util.concurrent.Future;
 
 import org.apache.commons.math3.complex.Complex;
 
-import de.gsi.dataset.spi.DoubleDataSet3D;
+import de.gsi.dataset.GridDataSet;
+import de.gsi.dataset.spi.DoubleGridDataSet;
 import de.gsi.math.TMath;
 import de.gsi.math.TMathConstants;
 import de.gsi.math.spectra.Convolution;
@@ -197,10 +198,10 @@ public class ContinuousWavelet {
      * @param fmax maximum scalogram frequency range
      * @return Scalogram power in dB
      */
-    public synchronized double[][] getScalogramArrayFourier(final double[] data, final int nQuantx, final int nQuanty,
+    public synchronized double[] getScalogramArrayFourier(final double[] data, final int nQuantx, final int nQuanty,
             final double nu, final double fmin, final double fmax) {
         final int nQuantyInternal = (int) Math.floor(nQuanty * (fmax - fmin) / 0.5) + 1;
-        final double[][] ret = new double[nQuantyInternal][nQuantx];
+        final double[] ret = new double[nQuantyInternal * nQuantx];
         final boolean cyclicBoundaries = true;
 
         final long start = System.nanoTime();
@@ -257,7 +258,7 @@ public class ContinuousWavelet {
                                         }
                                         power /= nbin;
 
-                                        ret[j - min][i] = 10 * TMathConstants.Log10(power + 1e-99);
+                                        ret[(j - min) * nQuantx + i] = 10 * TMathConstants.Log10(power + 1e-99);
                                     }
                                 } else {
                                     for (int i = 0; i < filterDim; i++) {
@@ -267,13 +268,13 @@ public class ContinuousWavelet {
                                         final double Im = wtransformed[i2 + 1];
 
                                         final double power = TMathConstants.Sqr(Re) + TMathConstants.Sqr(Im);
-                                        ret[j - min][i] = 10 * TMathConstants.Log10(power + 1e-99);
+                                        ret[(j - min) * nQuantx + i] = 10 * TMathConstants.Log10(power + 1e-99);
                                     }
                                 }
 
                             } else {
                                 for (int i = 0; i < nQuantx; i++) {
-                                    ret[j - min][i] = Double.NaN;
+                                    ret[(j - min) * nQuantx + i] = Double.NaN;
                                 }
                             }
                         }
@@ -312,7 +313,7 @@ public class ContinuousWavelet {
                             }
                             power /= nbin;
 
-                            ret[j - min][i] = 10 * TMathConstants.Log10(power + 1e-99);
+                            ret[(j - min) * nQuantx + i] = 10 * TMathConstants.Log10(power + 1e-99);
                         }
                     } else {
                         for (int i = 0; i < filterDim; i++) {
@@ -322,13 +323,13 @@ public class ContinuousWavelet {
                             final double Im = wtransformed[i2 + 1];
 
                             final double power = TMathConstants.Sqr(Re) + TMathConstants.Sqr(Im);
-                            ret[j - min][i] = 10 * TMathConstants.Log10(power + 1e-99);
+                            ret[(j - min) * nQuantx + i] = 10 * TMathConstants.Log10(power + 1e-99);
                         }
                     }
 
                 } else {
                     for (int i = 0; i < nQuantx; i++) {
-                        ret[j - min][i] = Double.NaN;
+                        ret[(j - min) * nQuantx + i] = Double.NaN;
                     }
                 }
             }
@@ -374,7 +375,7 @@ public class ContinuousWavelet {
      * @param fmax maximum scalogram frequency range
      * @return the complex scalogram spectrum
      */
-    public DoubleDataSet3D getScalogram(final double[] data, final int nQuantx, final int nQuanty, final double nu,
+    public GridDataSet getScalogram(final double[] data, final int nQuantx, final int nQuanty, final double nu,
             final double fmin, final double fmax) {
         if (data == null || data.length == 0) {
             throw new InvalidParameterException(
@@ -392,10 +393,10 @@ public class ContinuousWavelet {
         }
 
         // create and return data set.
-        final DoubleDataSet3D ds = new DoubleDataSet3D("Scalogram");
-        ds.set(getScalogramTimeAxis(data, nQuantx, nQuanty, nu, fmin, fmax),
-                getScalogramFrequencyAxis(nQuantx, nQuanty, nu, fmin, fmax),
-                getScalogramArrayFourier(data, nQuantx, nQuanty, nu, fmin, fmax));
+        final GridDataSet ds = new DoubleGridDataSet("Scalogram", 2, new double[][] {getScalogramTimeAxis(
+                data, nQuantx, nQuanty, nu, fmin, fmax),
+            getScalogramFrequencyAxis(nQuantx, nQuanty, nu, fmin, fmax), 
+            getScalogramArrayFourier(data, nQuantx, nQuanty, nu, fmin, fmax)});
         return ds;
     }
 

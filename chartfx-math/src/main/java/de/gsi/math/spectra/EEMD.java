@@ -1,7 +1,7 @@
 package de.gsi.math.spectra;
 
-import de.gsi.dataset.DataSet3D;
-import de.gsi.dataset.spi.DoubleDataSet3D;
+import de.gsi.dataset.GridDataSet;
+import de.gsi.dataset.spi.DoubleGridDataSet;
 import de.gsi.math.Spline;
 import de.gsi.math.TMath;
 import de.gsi.math.TMathConstants;
@@ -239,14 +239,12 @@ public class EEMD {
         return flag;
     }
 
-    public double[][] getSpectrumArray(final double[] data, final int nQuantx, final int Quanty) {
+    public double[] getSpectrumArray(final double[] data, final int nQuantx, final int Quanty) {
         final int nsamples = data.length;
         // required index[yrange][xrange]
-        final double[][] ret = new double[nsamples / 2][nsamples];
-        for (int i = 0; i < nsamples / 2; i++) {
-            for (int j = 0; j < nsamples; j++) {
-                ret[i][j] = Double.NaN;
-            }
+        final double[] ret = new double[nsamples / 2 * nsamples];
+        for (int i = 0; i < ret.length; i++) {
+            ret[i] = Double.NaN;
         }
 
         final HilbertTransform hilbert = new HilbertTransform();
@@ -276,12 +274,13 @@ public class EEMD {
                         yIndex = nsamples / 2 - 1;
                     }
 
-                    // ret[j][y_index] = Math.log(amplitude);
-                    ret[yIndex][j] = 10 * Math.log(amplitude_filtered[j]);
-                    if (ret[yIndex][j] < -10 || ret[yIndex][j] > 10) {
-                        ret[yIndex][j] = Double.NaN;
-                        // ret[j][y_index] = TMath.Sqr(amplitude);
+                    // double res = Math.log(amplitude);
+                    double res = 10 * Math.log(amplitude_filtered[j]);
+                    if (res < -10 || res > 10) {
+                        res = Double.NaN;
+                        // res = TMath.Sqr(amplitude);
                     }
+                    ret[yIndex + nsamples / 2 * j] = res;
                 }
             }
 
@@ -292,13 +291,13 @@ public class EEMD {
 
     /**
      * EMD spectrum implementation
+     * 
      * @param data input data
      * @param nQuantx quantisation in X
      * @param nQuanty quantisation in Y
-     *
      * @return the complex HHT spectrum
      */
-    public synchronized DataSet3D getScalogram(final double[] data, final int nQuantx, final int nQuanty) {
+    public synchronized GridDataSet getScalogram(final double[] data, final int nQuantx, final int nQuanty) {
         // create and return data set.
         fstatus = 0;
         final int nsamples = data.length;
@@ -313,8 +312,8 @@ public class EEMD {
             frequency[i] = (double) i / (double) nsamples;
         }
 
-        final DoubleDataSet3D ds = new DoubleDataSet3D("HilbertSpectrum");
-        ds.set(time, frequency, getSpectrumArray(data, nQuantx, nQuanty));
+        final DoubleGridDataSet ds = new DoubleGridDataSet("HilbertSpectrum", 2,
+                new double[][] { time, frequency, getSpectrumArray(data, nQuantx, nQuanty) });
 
         fstatus = 100;
         return ds;
