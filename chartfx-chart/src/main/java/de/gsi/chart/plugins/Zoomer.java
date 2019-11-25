@@ -1013,9 +1013,9 @@ public class Zoomer extends ChartPlugin {
 
             final int limit = Math.abs(getAutoZoomThreshold());
 
-            // pixel distance based algorithm
-            final boolean isZoomX = Math.abs(diffY) <= limit && Math.abs(diffX) >= limit;
-            final boolean isZoomY = Math.abs(diffX) <= limit && Math.abs(diffY) >= limit;
+            // pixel distance based algorithm + aspect ratio to prevent flickering when starting selection
+            final boolean isZoomX = Math.abs(diffY) <= limit && Math.abs(diffX) >= limit && Math.abs(diffX / diffY) > 3;
+            final boolean isZoomY = Math.abs(diffX) <= limit && Math.abs(diffY) >= limit && Math.abs(diffY / diffX) > 3;
 
             // alternate angle-based algorithm
             // final int angle = (int) Math.toDegrees(Math.atan2(diffY, diffX));
