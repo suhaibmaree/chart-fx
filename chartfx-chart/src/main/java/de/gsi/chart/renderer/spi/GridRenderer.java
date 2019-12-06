@@ -205,13 +205,11 @@ public class GridRenderer extends Pane implements Renderer {
             if (yNorm >= 0 && yNorm < maxRadius) {
                 gc.strokeOval(xCentre - yNorm, yCentre - yNorm, 2 * yNorm, 2 * yNorm);
 
-                gc.save();
                 gc.setFont(yAxis.getTickLabelFont());
                 gc.setStroke(yAxis.getTickLabelFill());
                 gc.setLineDashes(null);
                 gc.setTextBaseline(VPos.CENTER);
                 gc.strokeText(label, xCentre + (int) yAxis.getTickLabelGap(), yCentre - yNorm);
-                gc.restore();
             }
         });
 
@@ -254,7 +252,6 @@ public class GridRenderer extends Pane implements Renderer {
 
                 gc.strokeLine(xCentre, yCentre, x, y);
 
-                gc.save();
                 gc.setFont(yAxis.getTickLabelFont());
                 gc.setStroke(yAxis.getTickLabelFill());
                 gc.setLineDashes(null);
@@ -271,8 +268,6 @@ public class GridRenderer extends Pane implements Renderer {
                     }
                     gc.strokeText(String.valueOf(phi), xl, yl);
                 }
-                gc.restore();
-
             }
 
             if (xAxis.isLogAxis() || verMinorGridStyleNode.isVisible()) {

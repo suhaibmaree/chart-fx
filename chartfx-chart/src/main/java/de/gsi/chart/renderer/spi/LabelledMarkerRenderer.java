@@ -70,25 +70,23 @@ public class LabelledMarkerRenderer extends AbstractDataSetManagement<LabelledMa
 
             final String pointStyle = dataSet.getStyle(i);
             if (pointStyle != null) {
-                gc.save();
                 setGraphicsContextAttributes(gc, pointStyle);
             }
 
             gc.strokeLine(0, screenY, width, screenY);
 
             if (Math.abs(screenY - lastLabel) > lastFontSize && !label.isEmpty()) {
-                gc.save();
                 gc.setLineWidth(0.8);
                 gc.setLineDashes(1.0);
-                gc.translate(Math.ceil(screenY + 3), Math.ceil(0.99 * width));
+                final double shiftX = Math.ceil(screenY + 3);
+                final double shiftY = Math.ceil(0.99 * width);
+                gc.translate(shiftX, shiftY);
+
                 gc.fillText(label, 0.0, 0);
-                gc.restore();
+                gc.translate(-shiftX, -shiftY);
+
                 lastLabel = screenY;
                 lastFontSize = gc.getFont().getSize();
-            }
-
-            if (pointStyle != null) {
-                gc.restore();
             }
         }
         gc.restore();
@@ -127,25 +125,23 @@ public class LabelledMarkerRenderer extends AbstractDataSetManagement<LabelledMa
             final String pointStyle = dataSet.getStyle(i);
 
             if (pointStyle != null) {
-                gc.save();
                 setGraphicsContextAttributes(gc, pointStyle);
             }
 
             gc.strokeLine(screenX, 0, screenX, height);
 
             if (Math.abs(screenX - lastLabel) > lastFontSize && !label.isEmpty()) {
-                gc.save();
                 gc.setLineWidth(0.8);
                 gc.setLineDashes(1.0);
-                gc.translate(Math.ceil(screenX + 3), Math.ceil(0.01 * height));
+                final double shiftX = Math.ceil(screenX + 3);
+                final double shiftY = Math.ceil(0.01 * height);
+                gc.translate(shiftX, shiftY);
                 gc.rotate(+90);
                 gc.fillText(label, 0.0, 0);
-                gc.restore();
+                gc.rotate(-90);
+                gc.translate(-shiftX, -shiftY);
                 lastLabel = screenX;
                 lastFontSize = gc.getFont().getSize();
-            }
-            if (pointStyle != null) {
-                gc.restore();
             }
         }
         gc.restore();

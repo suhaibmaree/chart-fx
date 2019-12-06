@@ -72,22 +72,18 @@ public class Hexagon extends Polygon {
     }
 
     public void draw(GraphicsContext gc) {
-        gc.save();
         gc.setStroke(getStroke());
         gc.setLineWidth(getStrokeWidth());
         gc.setFill(getFill());
         drawHexagon(gc);
-        gc.restore();
     }
 
     public void drawContour(GraphicsContext gc) {
-        gc.save();
         gc.setStroke(getStroke());
         gc.setLineWidth(getStrokeWidth());
         gc.setFill(getFill());
         if (map == null) {
             drawHexagon(gc, Direction.values());
-            gc.restore();
         }
 
         final List<Direction> list = new ArrayList<>();
@@ -108,8 +104,6 @@ public class Hexagon extends Polygon {
         }
 
         drawHexagon(gc, list.toArray(new Direction[list.size()]));
-
-        gc.restore();
     }
 
     public void drawHexagon(final GraphicsContext gc) {

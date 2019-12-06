@@ -685,8 +685,6 @@ public abstract class AbstractAxis extends AbstractAxisParameter implements Axis
         final double shiftedLabels = ((getOverlapPolicy() == AxisLabelOverlapPolicy.SHIFT_ALT) && isLabelOverlapping())
                 || (getOverlapPolicy() == AxisLabelOverlapPolicy.FORCED_SHIFT_ALT) ? tickLabelSize + tickLabelGap : 0.0;
 
-        // save css-styled label parameters
-        gc.save();
         gc.translate(paddingX, paddingY);
         // N.B. streams, filter, and forEach statements have been evaluated and
         // appear to give no (or negative) performance for little/arguable
@@ -752,7 +750,9 @@ public abstract class AbstractAxis extends AbstractAxisParameter implements Axis
             break;
         }
 
-        gc.restore();
+        // revert previous gc modifications (as an alternative to gc.save/restore)
+        gc.translate(-paddingX, -paddingY);
+
     }
 
     protected void drawAxisLine(final GraphicsContext gc, final double axisLength, final double axisWidth,
@@ -767,7 +767,7 @@ public abstract class AbstractAxis extends AbstractAxisParameter implements Axis
 
         // save css-styled line parameters
         final Path tickStyle = getMajorTickStyle();
-        gc.save();
+
         gc.setStroke(tickStyle.getStroke());
         gc.setFill(tickStyle.getFill());
         gc.setLineWidth(tickStyle.getStrokeWidth());
@@ -805,7 +805,8 @@ public abstract class AbstractAxis extends AbstractAxisParameter implements Axis
         default:
             break;
         }
-        gc.restore();
+        // revert previous gc modifications (as an alternative to gc.save/restore)
+        gc.translate(-paddingX, -paddingY);
     }
 
     /**
@@ -836,8 +837,6 @@ public abstract class AbstractAxis extends AbstractAxisParameter implements Axis
         final AxisLabelOverlapPolicy overlapPolicy = getOverlapPolicy();
         final double tickLabelGap = getTickLabelGap();
 
-        // save css-styled label parameters
-        gc.save();
         // N.B. important: translate by padding ie. canvas is +padding larger on
         // all size compared to region
         gc.translate(paddingX, paddingY);
@@ -1010,7 +1009,9 @@ public abstract class AbstractAxis extends AbstractAxisParameter implements Axis
             break;
         }
 
-        gc.restore();
+        // revert previous gc modifications (as an alternative to gc.save/restore)
+        gc.setGlobalAlpha(1.0);
+        gc.translate(-paddingX, -paddingY);
     }
 
     protected void drawTickMarks(final GraphicsContext gc, final double axisLength, final double axisWidth,
@@ -1024,7 +1025,6 @@ public abstract class AbstractAxis extends AbstractAxisParameter implements Axis
         // for relative positioning of axes drawn on top of the main canvas
         final double axisCentre = getCenterAxisPosition();
 
-        gc.save();
         // save css-styled line parameters
         gc.setStroke(tickStyle.getStroke());
         gc.setFill(tickStyle.getFill());
@@ -1133,7 +1133,8 @@ public abstract class AbstractAxis extends AbstractAxisParameter implements Axis
             break;
         }
 
-        gc.restore();
+        // revert previous gc modifications (as an alternative to gc.save/restore)
+        gc.translate(-paddingX, -paddingY);
     }
 
     /**
@@ -1402,7 +1403,6 @@ public abstract class AbstractAxis extends AbstractAxisParameter implements Axis
     }
 
     protected static void drawAxisLabel(final GraphicsContext gc, final double x, final double y, final Text label) {
-        gc.save();
         gc.setTextAlign(label.getTextAlignment());
         gc.setFont(label.getFont());
         gc.setFill(label.getFill());
@@ -1411,13 +1411,14 @@ public abstract class AbstractAxis extends AbstractAxisParameter implements Axis
         gc.translate(x, y);
         gc.rotate(label.getRotate());
         gc.fillText(label.getText(), 0, 0);
-        gc.restore();
 
+        // revert previous gc modifications (as an alternative to gc.save/restore)
+        gc.rotate(-label.getRotate());
+        gc.translate(-x, -y);
     }
 
     protected static void drawTickMarkLabel(final GraphicsContext gc, final double x, final double y,
             final double scaleFont, final TickMark tickMark) {
-        gc.save();
 
         gc.setFont(tickMark.getFont());
         gc.setFill(tickMark.getFill());
@@ -1435,7 +1436,16 @@ public abstract class AbstractAxis extends AbstractAxisParameter implements Axis
 
         gc.fillText(tickMark.getText(), 0, 0);
         // gc.fillText(tickMark.getText(), x, y);C
-        gc.restore();
+
+        // revert previous gc modifications (as an alternative to gc.save/restore)
+        if (scaleFont != 1.0) {
+            gc.scale(1.0/scaleFont, 1.0);
+        }
+        gc.setGlobalAlpha(1.0);
+        if (tickMark.getRotate() != 0.0) {
+            gc.rotate(-tickMark.getRotate());
+        }
+        gc.translate(-x, -y);
 
     }
 

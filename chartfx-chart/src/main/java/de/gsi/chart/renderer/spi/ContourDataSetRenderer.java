@@ -538,7 +538,6 @@ public class ContourDataSetRenderer extends AbstractDataSetManagement<ContourDat
         // draw contour
         for (final Hexagon hexagon : map.getAllHexagons()) {
             // draw hexagon contour according to Node specifications
-            gc.save();
             final Paint stroke = hexagon.getStroke();
             gc.setStroke(stroke);
             gc.setLineWidth(hexagon.getStrokeWidth());
@@ -556,16 +555,7 @@ public class ContourDataSetRenderer extends AbstractDataSetManagement<ContourDat
                     list.add(direction);
                 }
             }
-            // if (stroke.equals(Color.RED)) {
-            // list.add(Direction.NORTHWEST);
-            // list.add(Direction.SOUTHWEST);
-            // gc.setStroke(Color.BLACK);
-            // gc.setLineWidth(4);
-            // }
-            // gc.setFill(Color.RED);
             hexagon.drawHexagon(gc, list.toArray(new Direction[list.size()]));
-
-            gc.restore();
         }
 
         ProcessingProfiler.getTimeDiff(start, "drawHexagonMapContour");

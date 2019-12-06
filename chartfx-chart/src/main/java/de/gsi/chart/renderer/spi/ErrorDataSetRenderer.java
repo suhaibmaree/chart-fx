@@ -100,7 +100,7 @@ public class ErrorDataSetRenderer extends AbstractErrorDataSetRendererParameter<
         final double localBarWidth = isDynamicBarWidth() ? dynBarWidth : constBarWidth;
         final double barWidthHalf = localBarWidth / 2 - (isShiftBar() ? xOffset * getShiftBarOffset() : 0);
 
-        gc.save();
+
         DefaultRenderColorScheme.setMarkerScheme(gc, localCachedPoints.defaultStyle,
                 localCachedPoints.dataSetIndex + localCachedPoints.dataSetStyleIndex);
         DefaultRenderColorScheme.setGraphicsContextAttributes(gc, localCachedPoints.defaultStyle);
@@ -112,11 +112,10 @@ public class ErrorDataSetRenderer extends AbstractErrorDataSetRendererParameter<
                             localCachedPoints.yValues[i]);
                 } else {
                     // work-around: bar colour controlled by the marker color
-                    gc.save();
                     gc.setLineWidth(barWidthHalf);
                     gc.strokeLine(localCachedPoints.xZero, localCachedPoints.yZero, localCachedPoints.xValues[i],
                             localCachedPoints.yValues[i]);
-                    gc.restore();
+                    gc.setLineWidth(1.0);
                 }
             }
         } else {
@@ -138,8 +137,6 @@ public class ErrorDataSetRenderer extends AbstractErrorDataSetRendererParameter<
                 }
             }
         }
-
-        gc.restore();
     }
 
     /**
@@ -150,7 +147,7 @@ public class ErrorDataSetRenderer extends AbstractErrorDataSetRendererParameter<
         if (!isDrawBubbles()) {
             return;
         }
-        gc.save();
+
         DefaultRenderColorScheme.setMarkerScheme(gc, localCachedPoints.defaultStyle,
                 localCachedPoints.dataSetIndex + localCachedPoints.dataSetStyleIndex);
 
@@ -205,12 +202,11 @@ public class ErrorDataSetRenderer extends AbstractErrorDataSetRendererParameter<
                 gc.fillOval(x, y, 2 * radius, 2 * radius);
             }
         }
-
-        gc.restore();
     }
 
     private void drawChartCompontents(final GraphicsContext gc, final CachedDataPoints localCachedPoints) {
         final long start = ProcessingProfiler.getTimeStamp();
+        gc.save();
         switch (getErrorType()) {
         case ERRORBARS:
             drawErrorBars(gc, localCachedPoints);
@@ -238,6 +234,7 @@ public class ErrorDataSetRenderer extends AbstractErrorDataSetRendererParameter<
             drawDefaultNoErrors(gc, localCachedPoints);
             break;
         }
+        gc.restore();
         ProcessingProfiler.getTimeDiff(start);
     }
 
@@ -263,7 +260,6 @@ public class ErrorDataSetRenderer extends AbstractErrorDataSetRendererParameter<
         drawBars(gc, lCacheP);
 
         final int dashHalf = getDashSize() / 2;
-        gc.save();
         DefaultRenderColorScheme.setFillScheme(gc, lCacheP.defaultStyle, lCacheP.dataSetIndex);
         DefaultRenderColorScheme.setGraphicsContextAttributes(gc, lCacheP.defaultStyle);
 
@@ -308,7 +304,6 @@ public class ErrorDataSetRenderer extends AbstractErrorDataSetRendererParameter<
                         lCacheP.errorYPos[i]);
             }
         }
-        gc.restore();
 
         drawPolyLine(gc, lCacheP);
         drawMarker(gc, lCacheP);
@@ -448,8 +443,6 @@ public class ErrorDataSetRenderer extends AbstractErrorDataSetRendererParameter<
 
         final int plotingIndex = dsLayoutIndexOffset + (dsIndexLocal == null ? dsIndex : dsIndexLocal.intValue());
 
-        gc.save();
-
         DefaultRenderColorScheme.setLineScheme(gc, dataSet.getStyle(), plotingIndex);
         DefaultRenderColorScheme.setGraphicsContextAttributes(gc, dataSet.getStyle());
         DefaultRenderColorScheme.setFillScheme(gc, dataSet.getStyle(), plotingIndex);
@@ -476,7 +469,7 @@ public class ErrorDataSetRenderer extends AbstractErrorDataSetRendererParameter<
             }
             gc.strokeLine(1, y, width - 2.0, y);
         }
-        gc.restore();
+
         return canvas;
     }
 
@@ -488,7 +481,7 @@ public class ErrorDataSetRenderer extends AbstractErrorDataSetRendererParameter<
         if (!isDrawMarker()) {
             return;
         }
-        gc.save();
+
         DefaultRenderColorScheme.setMarkerScheme(gc, localCachedPoints.defaultStyle,
                 localCachedPoints.dataSetIndex + localCachedPoints.dataSetStyleIndex);
 
@@ -507,18 +500,15 @@ public class ErrorDataSetRenderer extends AbstractErrorDataSetRendererParameter<
             } else {
                 final Triple<Marker, Color, Double> markerForPoint = getDefaultMarker(
                         localCachedPoints.defaultStyle + localCachedPoints.styles[i]);
-                gc.save();
+
                 if (markerForPoint.getSecond() != null) {
                     gc.setFill(markerForPoint.getSecond());
                 }
                 final Marker pointMarker = markerForPoint.getFirst() == null ? defaultMarker
                         : markerForPoint.getFirst();
                 pointMarker.draw(gc, x, y, markerForPoint.getThird());
-                gc.restore();
             }
         }
-
-        gc.restore();
     }
 
     /**
@@ -777,14 +767,12 @@ public class ErrorDataSetRenderer extends AbstractErrorDataSetRendererParameter<
         newX[n + 1] = localCachedPoints.xValues[0];
         newY[n + 1] = zero;
 
-        gc.save();
         DefaultRenderColorScheme.setLineScheme(gc, localCachedPoints.defaultStyle,
                 localCachedPoints.dataSetIndex + localCachedPoints.dataSetStyleIndex);
         DefaultRenderColorScheme.setGraphicsContextAttributes(gc, localCachedPoints.defaultStyle);
         // use stroke as fill colour
         gc.setFill(gc.getStroke());
         gc.fillPolygon(newX, newY, n + 2);
-        gc.restore();
 
         // release arrays to cache
         Cache.release(X_DRAW_POLY_LINE_AREA, newX);
@@ -822,7 +810,6 @@ public class ErrorDataSetRenderer extends AbstractErrorDataSetRendererParameter<
         newX[2 * (n + 1) - 1] = localCachedPoints.xValues[n - 1] + diffRight;
         newY[2 * (n + 1) - 1] = localCachedPoints.yZero;
 
-        gc.save();
         DefaultRenderColorScheme.setLineScheme(gc, localCachedPoints.defaultStyle,
                 localCachedPoints.dataSetIndex + localCachedPoints.dataSetStyleIndex);
         DefaultRenderColorScheme.setGraphicsContextAttributes(gc, localCachedPoints.defaultStyle);
@@ -834,8 +821,6 @@ public class ErrorDataSetRenderer extends AbstractErrorDataSetRendererParameter<
             final double y2 = newY[i + 1];
             gc.strokeLine(x1, y1, x2, y2);
         }
-
-        gc.restore();
 
         // release arrays to cache
         Cache.release(X_DRAW_POLY_LINE_HISTOGRAM, newX);
@@ -859,7 +844,6 @@ public class ErrorDataSetRenderer extends AbstractErrorDataSetRendererParameter<
         BezierCurve.calcCurveControlPoints(localCachedPoints.xValues, localCachedPoints.yValues, xCp1, yCp1, xCp2, yCp2,
                 localCachedPoints.actualDataCount);
 
-        gc.save();
         DefaultRenderColorScheme.setLineScheme(gc, localCachedPoints.defaultStyle,
                 localCachedPoints.dataSetIndex + localCachedPoints.dataSetStyleIndex);
         DefaultRenderColorScheme.setGraphicsContextAttributes(gc, localCachedPoints.defaultStyle);
@@ -885,7 +869,6 @@ public class ErrorDataSetRenderer extends AbstractErrorDataSetRendererParameter<
         gc.moveTo(localCachedPoints.xValues[n - 1], localCachedPoints.yValues[n - 1]);
         gc.closePath();
         gc.stroke();
-        gc.restore();
 
         // release arrays to Cache
         Cache.release(X_BEZIER_FIRST_CONTROL_POINT, xCp1);
@@ -926,14 +909,12 @@ public class ErrorDataSetRenderer extends AbstractErrorDataSetRendererParameter<
         newX[2 * (n + 1) - 1] = localCachedPoints.xValues[n - 1] + diffRight;
         newY[2 * (n + 1) - 1] = localCachedPoints.yZero;
 
-        gc.save();
         DefaultRenderColorScheme.setLineScheme(gc, localCachedPoints.defaultStyle,
                 localCachedPoints.dataSetIndex + localCachedPoints.dataSetStyleIndex);
         DefaultRenderColorScheme.setGraphicsContextAttributes(gc, localCachedPoints.defaultStyle);
         // use stroke as fill colour
         gc.setFill(gc.getStroke());
         gc.fillPolygon(newX, newY, 2 * (n + 1));
-        gc.restore();
 
         // release arrays to cache
         Cache.release(X_DRAW_POLY_LINE_HISTOGRAM, newX);
@@ -941,7 +922,6 @@ public class ErrorDataSetRenderer extends AbstractErrorDataSetRendererParameter<
     }
 
     protected static void drawPolyLineLine(final GraphicsContext gc, final CachedDataPoints localCachedPoints) {
-        gc.save();
         DefaultRenderColorScheme.setLineScheme(gc, localCachedPoints.defaultStyle,
                 localCachedPoints.dataSetIndex + localCachedPoints.dataSetStyleIndex);
         DefaultRenderColorScheme.setGraphicsContextAttributes(gc, localCachedPoints.defaultStyle);
@@ -987,8 +967,6 @@ public class ErrorDataSetRenderer extends AbstractErrorDataSetRendererParameter<
                 }
             }
         }
-
-        gc.restore();
     }
 
     protected static void drawPolyLineStairCase(final GraphicsContext gc, final CachedDataPoints localCachedPoints) {
@@ -1013,11 +991,9 @@ public class ErrorDataSetRenderer extends AbstractErrorDataSetRendererParameter<
         newX[2 * n - 1] = localCachedPoints.xMax;
         newY[2 * n - 1] = localCachedPoints.yValues[n - 1];
 
-        gc.save();
         DefaultRenderColorScheme.setLineScheme(gc, localCachedPoints.defaultStyle,
                 localCachedPoints.dataSetIndex + localCachedPoints.dataSetStyleIndex);
         DefaultRenderColorScheme.setGraphicsContextAttributes(gc, localCachedPoints.defaultStyle);
-        // gc.strokePolyline(newX, newY, 2*n);
 
         for (int i = 0; i < 2 * n - 1; i++) {
             final double x1 = newX[i];
@@ -1026,8 +1002,6 @@ public class ErrorDataSetRenderer extends AbstractErrorDataSetRendererParameter<
             final double y2 = newY[i + 1];
             gc.strokeLine(x1, y1, x2, y2);
         }
-
-        gc.restore();
 
         // release arrays to cache
         Cache.release(X_DRAW_POLY_LINE_STAIR_CASE, newX);

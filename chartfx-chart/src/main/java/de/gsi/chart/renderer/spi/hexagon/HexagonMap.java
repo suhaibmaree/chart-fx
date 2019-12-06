@@ -189,33 +189,25 @@ public class HexagonMap {
                 if (hexagon != null) {
 
                     if (oldHexagon != null) {
-                        gc.save();
                         gc.setFill(oldHexagon.getFill());
                         gc.setStroke(oldHexagon.getStroke());
                         oldHexagon.drawHexagon(gc);
-                        gc.restore();
                     }
                     oldHexagon = hexagon;
                 } else {
                     if (oldHexagon != null) {
-                        // System.err.println("left hexagon " + oldHexagon);
-                        gc.save();
                         gc.setFill(oldHexagon.getFill());
                         gc.setStroke(oldHexagon.getStroke());
                         oldHexagon.drawHexagon(gc);
-                        gc.restore();
                     }
 
                     oldHexagon = null;
                     return;
                 }
 
-                // System.err.println("found hexagon = " + hexagon);
-                gc.save();
                 gc.setFill(Color.YELLOW.darker());
                 gc.setStroke(hexagon.getStroke());
                 hexagon.drawHexagon(gc);
-                gc.restore();
 
                 // GridPosition pos = ((Hexagon) me.getSource()).position;
                 // for (HexagonCallback callBack : map.onHexExitCallback) {
