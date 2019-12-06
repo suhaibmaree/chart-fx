@@ -49,6 +49,7 @@ import javafx.beans.property.SimpleObjectProperty;
 import javafx.beans.property.StringProperty;
 import javafx.beans.property.StringPropertyBase;
 import javafx.beans.value.ChangeListener;
+import javafx.beans.value.WeakChangeListener;
 import javafx.beans.value.WritableValue;
 import javafx.collections.FXCollections;
 import javafx.collections.ListChangeListener;
@@ -67,6 +68,7 @@ import javafx.geometry.Pos;
 import javafx.scene.CacheHint;
 import javafx.scene.Group;
 import javafx.scene.Node;
+import javafx.scene.Scene;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.control.Label;
 import javafx.scene.layout.BorderPane;
@@ -80,6 +82,7 @@ import javafx.scene.layout.Region;
 import javafx.scene.layout.RowConstraints;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
+import javafx.stage.Window;
 import javafx.util.Duration;
 
 /**
@@ -357,6 +360,34 @@ public abstract class Chart extends HiddenSidesPane implements Observable {
             }
             super.set(side);
         }
+    };
+    
+    private final ChangeListener<? super Scene> scenePropertyListener = (ch, oldScene, newScene) -> {
+        if (oldScene == newScene) {
+            return;
+        }
+        if (oldScene != null) {
+            // remove listener
+
+        }
+
+        if (newScene == null) {
+            showing.set(false);
+            return;
+        }
+
+        // add listener
+        final ChangeListener<? super Window> windowPropertyListener = (ch1, oldWindow, newWindow) -> {
+            if (newWindow == null) {
+                showing.set(false);
+                return;
+            }
+            final ChangeListener<? super Boolean> showingPropertyListener = (ch2, o, n) -> {
+                showing.set(n);
+            };
+            newWindow.showingProperty().addListener(new WeakChangeListener<>(showingPropertyListener));
+        };
+        newScene.windowProperty().addListener(new WeakChangeListener<>(windowPropertyListener));
     };
 
     /**
@@ -962,31 +993,7 @@ public abstract class Chart extends HiddenSidesPane implements Observable {
     protected abstract void redrawCanvas();
 
     protected void registerShowingListener() {
-        sceneProperty().addListener((ch, oldScene, newScene) -> {
-            if (oldScene == newScene) {
-                return;
-            }
-            if (oldScene != null) {
-                // remove listener
-
-            }
-
-            if (newScene == null) {
-                showing.set(false);
-                return;
-            }
-
-            // add listener
-            newScene.windowProperty().addListener((ch1, oldWindow, newWindow) -> {
-                if (newWindow == null) {
-                    showing.set(false);
-                    return;
-                }
-                newWindow.showingProperty().addListener((ch2, o, n) -> {
-                    showing.set(n);
-                });
-            });
-        });
+        sceneProperty().addListener(new WeakChangeListener<>(scenePropertyListener));
         showing.addListener((ch, o, n) -> {
             if (n.equals(n)) {
                 return;
