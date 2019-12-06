@@ -4,7 +4,15 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.WeakHashMap;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReentrantLock;
+
+import org.checkerframework.checker.nullness.qual.NonNull;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.github.benmanes.caffeine.cache.Cache;
+import com.github.benmanes.caffeine.cache.Caffeine;
 
 import de.gsi.chart.axes.Axis;
 import de.gsi.chart.axes.AxisLabelFormatter;
@@ -43,13 +51,19 @@ import javafx.util.StringConverter;
  * @author rstein
  */
 public abstract class AbstractAxis extends AbstractAxisParameter implements Axis {
+    
+    // TODO BPETER remove before merge
+    private static final Logger LOGGER = LoggerFactory.getLogger(AbstractAxis.class);
+    
     protected static final double MIN_NARROW_FONT_SCALE = 0.7;
     protected static final double MAX_NARROW_FONT_SCALE = 1.0;
     protected static final int RANGE_ANIMATION_DURATION_MS = 700;
     protected static final int BURST_LIMIT_CSS_MS = 3000;
+    private static final int MAX_TICK_MARK_STRING_CACHE_ENTRIES = 1_000;
+    private static final int MAX_TICK_MARK_DOUBLE_CACHE_ENTRIES = 1_000;
     private long lastCssUpdate;
     private boolean callCssUpdater;
-    protected WeakHashMap<Number, Dimension2D> tickMarkSizeCache = new WeakHashMap<>();
+    protected WeakHashMap<Number, Dimension2D> tickMarkSizeCache = new WeakHashMap<>(); // unused?
     protected final Timeline animator = new Timeline();
     private final Canvas canvas = new ResizableCanvas();
     protected boolean labelOverlap;
@@ -103,10 +117,16 @@ public abstract class AbstractAxis extends AbstractAxisParameter implements Axis
     };
 
     // cache for major tick marks
-    protected WeakHashMap<String, TickMark> tickMarkStringCache = new WeakHashMap<>();
+    protected Cache<String, TickMark> tickMarkStringCache = Caffeine.newBuilder()
+            .maximumSize(MAX_TICK_MARK_STRING_CACHE_ENTRIES)
+            .weakValues()
+            .build();
 
     // cache for minor tick marks (N.B. usually w/o string label)
-    protected WeakHashMap<Double, TickMark> tickMarkDoubleCache = new WeakHashMap<>();
+    protected Cache<Double, TickMark> tickMarkDoubleCache = Caffeine.newBuilder()
+            .maximumSize(MAX_TICK_MARK_DOUBLE_CACHE_ENTRIES)
+            .weakValues()
+            .build();
 
     public AbstractAxis() {
         super();
@@ -267,18 +287,38 @@ public abstract class AbstractAxis extends AbstractAxisParameter implements Axis
     public GraphicsContext getGraphicsContext() {
         return canvas.getGraphicsContext2D();
     }
+    
+    // TODO BPETER remove before merge
+    private static AtomicLong hits = new AtomicLong();
+    private static AtomicLong misses = new AtomicLong();
 
     public TickMark getNewTickMark(final double tickValue, final double tickPosition, final String tickMarkLabel) {
         TickMark tick;
         if (tickMarkLabel.isEmpty()) {
+            if (tickMarkDoubleCache.getIfPresent(tickValue) != null) {
+              hits.incrementAndGet();
+            }
+            else {
+              misses.incrementAndGet();
+            }
             // usually a minor tick mark w/o label
-            tick = tickMarkDoubleCache.computeIfAbsent(tickValue,
+            tick = tickMarkDoubleCache.get(tickValue,
                     k -> new TickMark(getSide(), tickValue, tickPosition, getTickLabelRotation(), ""));
         } else {
+            if (tickMarkStringCache.getIfPresent(tickMarkLabel) != null) {
+                  hits.incrementAndGet();
+                }
+                else {
+                    misses.incrementAndGet();
+                }
             // usually a major tick mark with label
-            tick = tickMarkStringCache.computeIfAbsent(tickMarkLabel,
+            tick = tickMarkStringCache.get(tickMarkLabel,
                     k -> new TickMark(getSide(), tickValue, tickPosition, getTickLabelRotation(), k));
             tick.setValue(tickValue);
+        }
+        // TODO BPETER remove before merge
+        if ((misses.get() + hits.get()) % 1000 == 0) {
+            LOGGER.info("entries s: {} entries d: {} hits: {} ({}) misses: {} ({})", tickMarkStringCache.estimatedSize(), tickMarkDoubleCache.estimatedSize(), hits.get(), (double) hits.get() / (misses.get() + hits.get()), misses.get(), (double) misses.get() / (misses.get() + hits.get()));
         }
         tick.setPosition(tickPosition);
 
