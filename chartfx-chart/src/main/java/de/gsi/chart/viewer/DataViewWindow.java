@@ -4,6 +4,7 @@
 
 package de.gsi.chart.viewer;
 
+import java.lang.ref.WeakReference;
 import java.util.function.Predicate;
 
 import org.slf4j.Logger;
@@ -36,6 +37,7 @@ import javafx.scene.layout.Pane;
 import javafx.scene.layout.Priority;
 import javafx.stage.Screen;
 import javafx.stage.Stage;
+import javafx.stage.WindowEvent;
 
 public class DataViewWindow extends BorderPane {
     private static final Logger LOGGER = LoggerFactory.getLogger(DataViewWindow.class);
@@ -63,7 +65,7 @@ public class DataViewWindow extends BorderPane {
     private final Button maximizeRestoreButton = new SquareButton(CSS_WINDOW_MAXIMIZE_ICON);
     private final Button closeButton = new SquareButton(CSS_WINDOW_CLOSE_ICON);
 
-    private final ExternalStage dialog = new ExternalStage();
+    private final ExternalStage dialog = new ExternalStage(this);
 
     private transient double xOffset;
     private transient double yOffset;
@@ -446,39 +448,25 @@ public class DataViewWindow extends BorderPane {
         return decorationVisible;
     }
 
-    protected class ExternalStage extends Stage {
+    protected static class ExternalStage extends Stage {
         private transient double posX = 640;
         private transient double posY = 480;
         private transient double width = 640;
         private transient double height = 480;
         private transient boolean maximized;
+        private transient WeakReference<DataViewWindow> dataViewWindowReference;
+        private transient BorderPane dialogContent;
 
-        public ExternalStage() {
+        public ExternalStage(DataViewWindow dataViewWindowParam) {
             super();
-            titleProperty().bind(nameProperty());
-            final BorderPane dialogContent = new BorderPane();
+            dataViewWindowReference = new WeakReference<>(dataViewWindowParam);
+            titleProperty().set(dataViewWindowParam.getName());
+            dialogContent = new BorderPane();
             final Scene scene = new Scene(dialogContent, 640, 480);
             setScene(scene);
 
-            setOnShown(windowEvent -> {
-                if (DataViewWindow.this.equals(parentView.getMaximizedChild())) {
-                    parentView.setMaximizedChild(null);
-                }
-                parentView.getMinimisedChildren().remove(DataViewWindow.this);
-                parentView.getVisibleChildren().remove(DataViewWindow.this);
-                parentView.getUndockedChildren().add(DataViewWindow.this);
-
-                setCenter(null);
-                dialogContent.setCenter(getContent());
-            });
-
-            setOnHidden(windowEvent -> {
-                dialogContent.setCenter(null);
-                setCenter(getContent());
-                parentView.getUndockedChildren().remove(DataViewWindow.this);
-                parentView.getVisibleChildren().add(DataViewWindow.this);
-            });
-
+            setOnShown(this::onShowHandler);
+            setOnHidden(this::onHiddenHandler);
         }
 
         public boolean isMaximised() {
@@ -516,8 +504,11 @@ public class DataViewWindow extends BorderPane {
 
         public void show(final MouseEvent mouseEvent) {
             if (mouseEvent == null) {
-                setX(DataViewWindow.this.getScene().getWindow().getX() + 50);
-                setY(DataViewWindow.this.getScene().getWindow().getY() + 50);
+                DataViewWindow dataViewWindow = dataViewWindowReference.get();
+                if (dataViewWindow != null) {
+                    setX(dataViewWindow.getScene().getWindow().getX() + 50);
+                    setY(dataViewWindow.getScene().getWindow().getY() + 50);
+                }
             } else {
                 setX(mouseEvent.getScreenX());
                 setY(mouseEvent.getScreenY());
@@ -529,6 +520,42 @@ public class DataViewWindow extends BorderPane {
                 LOGGER.atDebug().addArgument(getName()).log("show window '{}'");
             }
             show();
+        }
+
+        private String getName() {
+            return titleProperty().getValue();
+        }
+
+        private void onShowHandler(WindowEvent windowEvent) {
+            DataViewWindow dataViewWindow = dataViewWindowReference.get();
+            if (dataViewWindow == null) {
+                dialogContent.setCenter(null);
+                return;
+            }
+            titleProperty().bind(dataViewWindow.nameProperty());
+            if (dataViewWindow.equals(dataViewWindow.getParentView().getMaximizedChild())) {
+                dataViewWindow.getParentView().setMaximizedChild(null);
+            }
+            dataViewWindow.getParentView().getMinimisedChildren().remove(dataViewWindow);
+            dataViewWindow.getParentView().getVisibleChildren().remove(dataViewWindow);
+            dataViewWindow.getParentView().getUndockedChildren().add(dataViewWindow);
+
+            dataViewWindow.setCenter(null);
+            dialogContent.setCenter(dataViewWindow.getContent());
+        }
+
+        private void onHiddenHandler(WindowEvent windowEvent) {
+            titleProperty().unbind();
+            dialogContent.setCenter(null);
+            dialogContent = new BorderPane();
+            this.getScene().setRoot(dialogContent);
+
+            DataViewWindow dataViewWindow = dataViewWindowReference.get();
+            if (dataViewWindow != null) {
+                dataViewWindow.setCenter(dataViewWindow.getContent());
+                dataViewWindow.getParentView().getUndockedChildren().remove(dataViewWindow);
+                dataViewWindow.getParentView().getVisibleChildren().add(dataViewWindow);
+            }
         }
     }
 
