@@ -1,7 +1,9 @@
 package de.gsi.chart.plugins;
 
+import java.lang.ref.WeakReference;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
 
@@ -23,7 +25,9 @@ import javafx.beans.property.DoubleProperty;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.property.SimpleObjectProperty;
+import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
+import javafx.event.WeakEventHandler;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.control.Button;
@@ -41,6 +45,7 @@ import javafx.scene.layout.Pane;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
+import javafx.stage.WindowEvent;
 import javafx.util.Duration;
 import javafx.util.converter.NumberStringConverter;
 
@@ -113,9 +118,11 @@ public class EditAxis extends ChartPlugin {
 
         chartProperty().addListener((obs, oldChart, newChart) -> {
             if (oldChart != null) {
-                removeMouseEventHandlers(oldChart);
+                popUpList.clear();
             }
-            addMouseEventHandlers(newChart);
+            if (newChart != null) {
+                addMouseEventHandlers(newChart);
+            }
         });
     }
 
@@ -179,13 +186,6 @@ public class EditAxis extends ChartPlugin {
         return animatedProperty().get();
     }
 
-    private void removeMouseEventHandlers(final Chart oldChart) {
-        popUpList.forEach(popOver -> {
-            popOver.deregisterMouseEvents();
-            popUpList.remove(popOver);
-        });
-    }
-
     /**
      * Sets the value of the {@link #animatedProperty()}.
      *
@@ -224,7 +224,7 @@ public class EditAxis extends ChartPlugin {
         return fadeDuration;
     }
 
-    private class AxisEditor extends BorderPane {
+    private static class AxisEditor extends BorderPane {
 
         AxisEditor(final Axis axis, final boolean isHorizontal) {
             super();
@@ -351,7 +351,7 @@ public class EditAxis extends ChartPlugin {
 
             return boxMax;
         }
-
+        
         private final TextField getBoundField(final Axis axis, final boolean isLowerBound) {
             final TextField textField = new TextField();
 
@@ -531,14 +531,19 @@ public class EditAxis extends ChartPlugin {
             return boxMax;
         }
 
-        private Pane getMinMaxButtons(final Axis axis, final boolean isHorizontal, final boolean isMin) {
+        private Pane getMinMaxButtons(final Axis axisParam, final boolean isHorizontal, final boolean isMin) {
             final Button incMaxButton = new Button("", new Glyph(EditAxis.FONT_AWESOME, "\uf077"));
             incMaxButton.setMaxWidth(Double.MAX_VALUE);
             VBox.setVgrow(incMaxButton, Priority.ALWAYS);
             HBox.setHgrow(incMaxButton, Priority.ALWAYS);
+            
+            WeakReference<Axis> axisReference = new WeakReference<>(axisParam);
             incMaxButton.setOnAction(evt -> {
-                axis.setAutoRanging(false);
-                changeAxisRangeLimit(axis, isHorizontal ? isMin : !isMin, true);
+                Axis axis = axisReference.get();
+                if (axis != null) {
+                    axis.setAutoRanging(false);
+                    changeAxisRangeLimit(axis, isHorizontal ? isMin : !isMin, true);
+                }
             });
 
             final Button decMaxButton = new Button("", new Glyph(EditAxis.FONT_AWESOME, "\uf078"));
@@ -547,8 +552,11 @@ public class EditAxis extends ChartPlugin {
             HBox.setHgrow(decMaxButton, Priority.ALWAYS);
 
             decMaxButton.setOnAction(evt -> {
-                axis.setAutoRanging(false);
-                changeAxisRangeLimit(axis, isHorizontal ? isMin : !isMin, false);
+                Axis axis = axisReference.get();
+                if (axis != null) {
+                    axis.setAutoRanging(false);
+                    changeAxisRangeLimit(axis, isHorizontal ? isMin : !isMin, false);
+                }
             });
             final Pane box = isHorizontal ? new VBox() : new HBox();
             box.getChildren().addAll(incMaxButton, decMaxButton);
@@ -556,14 +564,19 @@ public class EditAxis extends ChartPlugin {
             return box;
         }
 
-        private Pane getRangeChangeButtons(final Axis axis, final boolean isHorizontal) {
+        private Pane getRangeChangeButtons(final Axis axisParam, final boolean isHorizontal) {
             final Button incMaxButton = new Button("", new Glyph(EditAxis.FONT_AWESOME, "expand"));
             incMaxButton.setMaxWidth(Double.MAX_VALUE);
             VBox.setVgrow(incMaxButton, Priority.NEVER);
             HBox.setHgrow(incMaxButton, Priority.NEVER);
+            WeakReference<Axis> axisReference = new WeakReference<>(axisParam);
+
             incMaxButton.setOnAction(evt -> {
-                axis.setAutoRanging(false);
-                changeAxisRange(axis, true);
+                Axis axis = axisReference.get();
+                if (axis != null) {
+                    axis.setAutoRanging(false);
+                    changeAxisRange(axis, true);
+                }
             });
 
             final Button decMaxButton = new Button("", new Glyph(EditAxis.FONT_AWESOME, "compress"));
@@ -572,8 +585,11 @@ public class EditAxis extends ChartPlugin {
             HBox.setHgrow(decMaxButton, Priority.NEVER);
 
             decMaxButton.setOnAction(evt -> {
-                axis.setAutoRanging(false);
-                changeAxisRange(axis, false);
+                Axis axis = axisReference.get();
+                if (axis != null) {
+                    axis.setAutoRanging(false);
+                    changeAxisRange(axis, false);
+                }
             });
             final Pane boxMax = isHorizontal ? new VBox() : new HBox();
             boxMax.getChildren().addAll(incMaxButton, decMaxButton);
@@ -583,26 +599,30 @@ public class EditAxis extends ChartPlugin {
 
     }
 
-    private class MyPopOver extends PopOver {
+    private static class MyPopOver extends PopOver {
 
         private long popOverShowStartTime;
         private boolean isMouseInPopOver;
-        private Axis axis = null;
+        private WeakReference<Axis> axisReference = null;
 
         private final EventHandler<? super MouseEvent> axisClickEventHandler = evt -> {
             if (evt.getButton() == MouseButton.SECONDARY) {
                 final double x = evt.getScreenX();
                 final double y = evt.getScreenY();
+                Axis axis = axisReference.get();
                 if (axis != null) {
                     show((Node) axis, x, y);
                 }
             }
 
         };
+        private final EventHandler<WindowEvent> onShowingHandler = evt -> popOverShowStartTime = System.currentTimeMillis();
+        private final EventHandler<? super MouseEvent> onMouseEnteredEventHandler = mevt -> isMouseInPopOver = true;
+        private final EventHandler<? super MouseEvent> onMouseExitedEventHandler = mevt -> isMouseInPopOver = false;
 
         MyPopOver(final Axis axis, final boolean isHorizontal) {
             super(new AxisEditor(axis, isHorizontal));
-            this.axis = axis;
+            this.axisReference = new WeakReference<>(axis);
             popOverShowStartTime = 0;
 
             super.setAutoHide(true);
@@ -633,35 +653,55 @@ public class EditAxis extends ChartPlugin {
             getStyleClass().add("axis-editor-view-pane");
 
             final Timeline checkMouseInsidePopUp = new Timeline(
-                    new KeyFrame(Duration.millis(EditAxis.DEFAULT_UPDATE_PERIOD), event -> {
-                        if (!MyPopOver.this.isShowing()) {
-                            return;
-                        }
+                    new KeyFrame(Duration.millis(EditAxis.DEFAULT_UPDATE_PERIOD),
+                            new CloseOverlayAnimationFinishedEventHandler(this)));
 
-                        final long now = System.currentTimeMillis();
-                        if (isMouseInPopOver) {
-                            popOverShowStartTime = System.currentTimeMillis();
-                        }
-                        if (Math.abs(now - popOverShowStartTime) > EditAxis.DEFAULT_SHUTDOWN_PERIOD) {
-                            MyPopOver.this.hide();
-                        }
-                    }));
             checkMouseInsidePopUp.setCycleCount(Animation.INDEFINITE);
             checkMouseInsidePopUp.play();
 
             registerMouseEvents();
         }
 
-        public void deregisterMouseEvents() {
-            ((Node) axis).removeEventHandler(MouseEvent.MOUSE_CLICKED, axisClickEventHandler);
-        }
-
         public final void registerMouseEvents() {
-            setOnShowing(evt -> popOverShowStartTime = System.currentTimeMillis());
-            getContentNode().setOnMouseEntered(mevt -> isMouseInPopOver = true);
-            getContentNode().setOnMouseExited(mevt -> isMouseInPopOver = false);
+            setOnShowing(new WeakEventHandler<>(onShowingHandler));
+            getContentNode().setOnMouseEntered(new WeakEventHandler<>(onMouseEnteredEventHandler));
+            getContentNode().setOnMouseExited(new WeakEventHandler<>(onMouseExitedEventHandler));
+            Axis axis = axisReference.get();
+            if (axis != null) {
+                ((Node) axis).setOnMouseClicked(new WeakEventHandler<>(axisClickEventHandler));
+            }
+        }
+        
+        /*
+         * Handles closing of the popover after leaving it with the mouse. Maybe replace with a different solution
+         * since the animation will play for ever (and ever)
+         */
+        private final static class CloseOverlayAnimationFinishedEventHandler implements EventHandler<ActionEvent> {
+            
+            private WeakReference<MyPopOver> myPopOverReference;
 
-            ((Node) axis).setOnMouseClicked(axisClickEventHandler);
+            public CloseOverlayAnimationFinishedEventHandler(MyPopOver myPopOverParam) {
+                myPopOverReference = new WeakReference<>(myPopOverParam);
+            }
+
+            @Override
+            public void handle(ActionEvent event) {
+                if (myPopOverReference.get() == null) {
+                    return;
+                }
+                MyPopOver myPopOver = myPopOverReference.get();
+                if (!myPopOver.isShowing()) {
+                    return;
+                }
+
+                final long now = System.currentTimeMillis();
+                if (myPopOver.isMouseInPopOver) {
+                    myPopOver.popOverShowStartTime = System.currentTimeMillis();
+                }
+                if (Math.abs(now - myPopOver.popOverShowStartTime) > EditAxis.DEFAULT_SHUTDOWN_PERIOD) {
+                    myPopOver.hide();
+                }
+            }
         }
     }
 }
