@@ -317,7 +317,7 @@ public abstract class AbstractAxis extends AbstractAxisParameter implements Axis
             tick.setValue(tickValue);
         }
         // TODO BPETER remove before merge
-        if ((misses.get() + hits.get()) % 1000 == 0) {
+        if ((misses.get() + hits.get()) % 5000 == 0) {
             LOGGER.info("entries s: {} entries d: {} hits: {} ({}) misses: {} ({})", tickMarkStringCache.estimatedSize(), tickMarkDoubleCache.estimatedSize(), hits.get(), (double) hits.get() / (misses.get() + hits.get()), misses.get(), (double) misses.get() / (misses.get() + hits.get()));
         }
         tick.setPosition(tickPosition);
